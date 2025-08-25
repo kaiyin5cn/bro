@@ -1,0 +1,92 @@
+.url-bar-container {
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pill-form {
+  width: 100%;
+}
+
+.pill-input {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 2px solid #e1e5e9;
+  border-radius: 50px;
+  padding: 1rem 1.5rem;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  min-height: 56px;
+}
+
+.pill-input:focus-within {
+  border-color: #646cff;
+  box-shadow: 0 2px 12px rgba(100, 108, 255, 0.15);
+}
+
+.url-icon {
+  color: #666;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.pill-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1.1rem;
+  background: transparent;
+}
+
+.pill-input input::placeholder {
+  color: #999;
+}
+
+.pill-input button {
+  background: transparent;
+  border: none;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s;
+  flex-shrink: 0;
+}
+
+.pill-input button:hover:not(:disabled) {
+  transform: scale(1.1);
+}
+
+.pill-input button:disabled {
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pill-input button svg {
+  color: #646cff;
+  font-size: 1.4rem;
+}
+
+.loading-circle {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.error-message {
+  background: #fee;
+  color: #c33;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #fcc;
+  font-size: 0.9rem;
+}
