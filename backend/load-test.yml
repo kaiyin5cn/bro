@@ -1,0 +1,18 @@
+config:
+  target: 'http://localhost:8828'
+  phases:
+    - duration: 10
+      arrivalRate: 1000
+  payload:
+    path: './test-urls.csv'
+    fields:
+      - longURL
+
+scenarios:
+  - name: "Shorten URL"
+    weight: 100
+    flow:
+      - post:
+          url: "/shorten"
+          json:
+            longURL: "{{ longURL }}"

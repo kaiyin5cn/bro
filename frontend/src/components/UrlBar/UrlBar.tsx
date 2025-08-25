@@ -12,8 +12,10 @@ function UrlBar() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!url.trim()) return
+    if (!url.trim()) {
+      console.log('URL is empty, returning')
+      return
+    }
     
     setLoading(true)
     

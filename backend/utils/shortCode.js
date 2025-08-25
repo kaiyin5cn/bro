@@ -8,5 +8,3 @@ export function generateShortCode() {
   return result;
 }
 
-// CommonJS export for Jest
-module.exports = { generateShortCode };
