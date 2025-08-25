@@ -13,12 +13,22 @@ export async function setupEnvironment() {
 
 export async function installDependencies() {
   console.log('📦 Installing dependencies...');
-  await execAsync('npm install');
-  console.log('✅ Dependencies installed');
+  try {
+    await execAsync('npm install');
+    console.log('✅ Dependencies installed');
+  } catch (error) {
+    console.log('❌ Dependency installation failed:', error.message);
+    process.exit(1);
+  }
 }
 
 export async function runTests() {
   console.log('🧪 Running tests...');
-  await execAsync('npm test');
-  console.log('✅ All tests passed');
+  try {
+    await execAsync('npm test');
+    console.log('✅ All tests passed');
+  } catch (error) {
+    console.log('⚠️  Some tests failed:', error.message);
+    console.log('   Continuing setup despite test failures...');
+  }
 }

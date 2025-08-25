@@ -22,7 +22,10 @@ async function devSetup(useReplica = false) {
     }
     
     console.log('🔌 Checking MongoDB connection...');
-    const client = new MongoClient(mongoUri);
+    const client = new MongoClient(mongoUri, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000
+    });
     
     try {
       await client.connect();
@@ -34,13 +37,18 @@ async function devSetup(useReplica = false) {
       const appPassword = process.env.DB_PASSWORD || 'securepassword123';
       
       await client.close();
-      await createDatabaseUser(mongoUri, dbName, appUser, appPassword);
-      console.log('✅ Database setup complete (indexes handled by Mongoose)');
+      try {
+        await createDatabaseUser(mongoUri, dbName, appUser, appPassword);
+        console.log('✅ Database setup complete (indexes handled by Mongoose)');
+      } catch (userError) {
+        console.log('⚠️  Database user creation failed:', userError.message);
+        console.log('   Continuing setup without user creation...');
+      }
 
     } catch (error) {
       console.log('⚠️  MongoDB not running or not accessible');
       console.log('   Please start MongoDB and run: npm run setup');
-      return;
+      process.exit(1);
     }
 
     // 5. Run tests
@@ -51,7 +59,7 @@ async function devSetup(useReplica = false) {
     console.log('   npm run dev    # Start development server');
     console.log('   npm test       # Run tests');
     console.log('   npm start      # Start production server');
-
+    process.exit(0);
   } catch (error) {
     console.error('❌ Setup failed:', error.message);
     process.exit(1);

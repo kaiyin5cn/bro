@@ -37,44 +37,63 @@ export async function setupReplicaSet() {
     try {
       await execAsync(cmd);
       console.log(`✅ MongoDB instance started on port ${PORTS[i]}`);
-    } catch {
-      console.log(`ℹ️  MongoDB instance on port ${PORTS[i]} may already be running`);
+    } catch (error) {
+      console.log(`⚠️  Failed to start MongoDB on port ${PORTS[i]}:`, error.message);
+      console.log('   Please ensure MongoDB is installed and mongod is in PATH');
+      process.exit(1);
     }
   }
   
   // Wait for instances
-  for (const port of PORTS) {
-    await waitForMongoDB(port);
+  try {
+    for (const port of PORTS) {
+      await waitForMongoDB(port);
+    }
+  } catch (error) {
+    console.log('❌ MongoDB instances not ready:', error.message);
+    process.exit(1);
   }
   
   // Initialize replica set
   const client = new MongoClient(`mongodb://localhost:${PORTS[0]}`);
-  await client.connect();
-  
-  const config = {
-    _id: REPLICA_SET_NAME,
-    members: PORTS.map((port, i) => ({
-      _id: i,
-      host: `localhost:${port}`,
-      priority: i === 0 ? 2 : 1
-    }))
-  };
-  
   try {
-    await client.db('admin').command({ replSetInitiate: config });
-    console.log('✅ Replica set initialized');
+    await client.connect();
+    
+    const config = {
+      _id: REPLICA_SET_NAME,
+      members: PORTS.map((port, i) => ({
+        _id: i,
+        host: `localhost:${port}`,
+        priority: i === 0 ? 2 : 1
+      }))
+    };
+    
+    try {
+      await client.db('admin').command({ replSetInitiate: config });
+      console.log('✅ Replica set initialized');
+    } catch (error) {
+      if (!error.message.includes('already initialized')) {
+        console.log('❌ Replica set initialization failed:', error.message);
+        await client.close();
+        process.exit(1);
+      }
+      console.log('ℹ️  Replica set already initialized');
+    }
+    
+    await client.close();
   } catch (error) {
-    if (!error.message.includes('already initialized')) throw error;
-    console.log('ℹ️  Replica set already initialized');
+    console.log('❌ Failed to connect to MongoDB for replica set setup:', error.message);
+    process.exit(1);
   }
-  
-  await client.close();
   await sleep(5000);
   return `mongodb://localhost:${PORTS.join(',localhost:')}/?replicaSet=${REPLICA_SET_NAME}`;
 }
 
 export async function createDatabaseUser(mongoUri, dbName, appUser, appPassword) {
-  const client = new MongoClient(mongoUri);
+  const client = new MongoClient(mongoUri, {
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000
+  });
   await client.connect();
   
   const appDb = client.db(dbName);
