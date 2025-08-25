@@ -1,5 +1,5 @@
 // Test: shortCode generation utility
-const { generateShortCode } = require('../utils/shortCode.cjs');
+import { generateShortCode } from '../utils/shortCode.js';
 
 describe('generateShortCode', () => {
   // Test: Should generate a string of exactly 7 characters

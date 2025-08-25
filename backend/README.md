@@ -1,28 +1,49 @@
-# URL Shortener Backend - Phase 1
+# URL Shortener Backend - Phase 1 ✅
 
-## Setup
+## Quick Start
 
-1. Install MongoDB locally
-2. Install dependencies: `npm install`
-3. Start the server: `npm run dev`
+```bash
+npm run setup    # One-command setup (installs deps, configures DB, runs tests)
+npm run dev      # Start development server
+```
+
+## Features
+
+- ✅ Base62 short code generation (7 characters)
+- ✅ MongoDB with user authentication & validation
+- ✅ Collision detection & retry mechanism
+- ✅ Access count tracking
+- ✅ Duplicate URL detection
+- ✅ Comprehensive error handling
+- ✅ Full test suite
 
 ## API Endpoints
 
-- `POST /shorten` - Create short URL
-  - Body: `{ "longURL": "https://example.com" }`
-  - Response: `{ "shortURL": "http://localhost:3000/abc123" }`
+**`POST /shorten`** - Create short URL
+- Body: `{ "longURL": "https://example.com" }`
+- Response: `{ "shortURL": "http://localhost:8828/abc1234" }`
 
-- `GET /:shortURL` - Redirect to original URL
-  - Redirects with 301 status code
+**`GET /:shortCode`** - Redirect to original URL
+- Redirects with 302 status code
+- Increments access count
+- Cache prevention headers
 
 ## Testing
 
 ```bash
-# Shorten a URL
-curl -X POST http://localhost:3000/shorten \
+# Unit tests
+npm test
+
+# Load testing
+npm run load-test
+
+# Manual API test
+curl -X POST http://localhost:8828/shorten \
   -H "Content-Type: application/json" \
   -d '{"longURL": "https://www.google.com"}'
-
-# Access the short URL (will redirect)
-curl -L http://localhost:3000/1
 ```
+
+## Prerequisites
+
+- Node.js 18+
+- MongoDB running on localhost:27017

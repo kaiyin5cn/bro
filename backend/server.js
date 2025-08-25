@@ -39,6 +39,10 @@ app.post('/shorten', async (req, res) => {
       attempts++;
     } while (await URL.findOne({ shortCode }) && attempts < 10);
 
+    if (attempts >= 10) {
+      return res.status(500).json({ error: 'Unable to generate unique short code' });
+    }
+
     // Save to database
     const urlDoc = new URL({
       longURL,
@@ -50,6 +54,9 @@ app.post('/shorten', async (req, res) => {
     res.json({ shortURL: `${process.env.BASE_URL}/${shortCode}` });
   } catch (error) {
     console.error(error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: 'Server error' });
   }
 });
