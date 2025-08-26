@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/database.js';
 import URL from './models/URL.js';
 import { generateShortCode } from './utils/shortCode.js';
+import authRoutes from './routes/auth.js';
+import adminRoutes from './routes/admin.js';
 
 dotenv.config();
 
@@ -15,6 +17,15 @@ app.use(express.json());
 
 // Connect to MongoDB
 connectDB();
+
+// Routes
+app.use('/auth', authRoutes);
+app.use('/admin', adminRoutes);
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 
 // POST /shorten - Create short URL
 app.post('/shorten', async (req, res) => {
@@ -92,4 +103,5 @@ app.get('/:shortCode', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
 });

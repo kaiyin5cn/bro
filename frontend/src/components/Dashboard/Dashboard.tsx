@@ -1,13 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FiEdit, FiTrash2 } from 'react-icons/fi'
+import axios from 'axios'
 import './Dashboard.css'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8828'
+
 interface UrlData {
-  id: number;
-  url: string;
+  _id: string;
+  longURL: string;
   shortCode: string;
-  createdDate: string;
-  lastUpdated: string;
+  accessCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Modal {
@@ -15,37 +19,40 @@ interface Modal {
   item: UrlData | null;
 }
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 interface DashboardProps {
   onLogout: () => void;
 }
 
 function Dashboard({ onLogout }: DashboardProps) {
-  const [urlData, setUrlData] = useState<UrlData[]>([
-    {
-      id: 1,
-      url: 'https://www.example.com/very-long-url-path',
-      shortCode: 'abc123',
-      createdDate: '2024-01-15',
-      lastUpdated: '2024-01-20'
-    },
-    {
-      id: 2,
-      url: 'https://www.google.com/search?q=example',
-      shortCode: 'xyz789',
-      createdDate: '2024-01-10',
-      lastUpdated: '2024-01-18'
-    },
-    {
-      id: 3,
-      url: 'https://github.com/user/repository',
-      shortCode: 'gh456',
-      createdDate: '2024-01-05',
-      lastUpdated: '2024-01-15'
-    }
-  ])
+  const [urlData, setUrlData] = useState<UrlData[]>([])
+  const [loading, setLoading] = useState(true)
   const [editModal, setEditModal] = useState<Modal>({ show: false, item: null })
   const [deleteModal, setDeleteModal] = useState<Modal>({ show: false, item: null })
   const [editValue, setEditValue] = useState('')
+
+  useEffect(() => {
+    fetchUrls()
+  }, [])
+
+  const fetchUrls = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/admin/urls`, {
+        headers: getAuthHeaders()
+      })
+      setUrlData(response.data)
+    } catch (error) {
+      if (error.response?.status === 401) {
+        onLogout()
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleEdit = (item: UrlData) => {
     setEditValue(item.shortCode)
@@ -56,18 +63,30 @@ function Dashboard({ onLogout }: DashboardProps) {
     setDeleteModal({ show: true, item })
   }
 
-  const confirmEdit = () => {
-    setUrlData(prev => prev.map(item => 
-      item.id === editModal.item?.id 
-        ? { ...item, shortCode: editValue, lastUpdated: new Date().toISOString().split('T')[0] }
-        : item
-    ))
-    setEditModal({ show: false, item: null })
+  const confirmEdit = async () => {
+    try {
+      await axios.put(`${API_BASE}/admin/urls/${editModal.item?._id}`, {
+        shortCode: editValue
+      }, {
+        headers: getAuthHeaders()
+      })
+      await fetchUrls()
+      setEditModal({ show: false, item: null })
+    } catch (error) {
+      console.error('Edit failed:', error)
+    }
   }
 
-  const confirmDelete = () => {
-    setUrlData(prev => prev.filter(item => item.id !== deleteModal.item?.id))
-    setDeleteModal({ show: false, item: null })
+  const confirmDelete = async () => {
+    try {
+      await axios.delete(`${API_BASE}/admin/urls/${deleteModal.item?._id}`, {
+        headers: getAuthHeaders()
+      })
+      await fetchUrls()
+      setDeleteModal({ show: false, item: null })
+    } catch (error) {
+      console.error('Delete failed:', error)
+    }
   }
 
   return (
@@ -79,24 +98,27 @@ function Dashboard({ onLogout }: DashboardProps) {
         </button>
       </header>
       <div className="dashboard-content">
-        <div className="table-container">
-          <table className="url-table">
-            <thead>
-              <tr>
-                <th>URL</th>
-                <th>Short Code</th>
-                <th>Created</th>
-                <th>Last Updated</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {urlData.map(item => (
-                <tr key={item.id}>
-                  <td className="url-cell">{item.url}</td>
-                  <td>{item.shortCode}</td>
-                  <td>{item.createdDate}</td>
-                  <td>{item.lastUpdated}</td>
+        {loading ? (
+          <div></div>
+        ) : (
+          <div className="table-container">
+            <table className="url-table">
+              <thead>
+                <tr>
+                  <th>URL</th>
+                  <th>Short Code</th>
+                  <th>Access Count</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {urlData.map(item => (
+                  <tr key={item._id}>
+                    <td className="url-cell">{item.longURL}</td>
+                    <td>{item.shortCode}</td>
+                    <td>{item.accessCount}</td>
+                    <td>{new Date(item.createdAt).toLocaleDateString()}</td>
                   <td className="actions-cell">
                     <div className="tooltip-container">
                       <button className="edit-btn" onClick={() => handleEdit(item)}>
@@ -113,10 +135,11 @@ function Dashboard({ onLogout }: DashboardProps) {
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </div>
       
       {editModal.show && (
         <div className="modal-overlay">

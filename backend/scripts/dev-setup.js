@@ -10,51 +10,11 @@ async function devSetup(useReplica = false) {
     // 2. Install dependencies
     await installDependencies();
 
-    // 3. Import MongoDB modules after installation
-    const { MongoClient } = await import('mongodb');
-    const dotenv = await import('dotenv');
-    const { setupReplicaSet, createDatabaseUser } = await import('./utils/mongodb-setup.js');
-    
-    dotenv.config();
+    // 3. Setup MongoDB
+    const { setupMongoDB } = await import('./utils/mongodb-simple.js');
+    await setupMongoDB(useReplica);
 
-    // 4. Setup MongoDB
-    let mongoUri = process.env.MONGODB_ADMIN_URI || 'mongodb://localhost:27017';
-    
-    if (useReplica) {
-      mongoUri = await setupReplicaSet();
-    }
-    
-    console.log('🔌 Checking MongoDB connection...');
-    const client = new MongoClient(mongoUri, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000
-    });
-    
-    try {
-      await client.connect();
-      console.log('✅ MongoDB connection successful');
-
-      // 5. Create database user
-      const dbName = process.env.DB_NAME || 'urlshortener';
-      const appUser = process.env.DB_USER || 'urlapp';
-      const appPassword = process.env.DB_PASSWORD || 'securepassword123';
-      
-      await client.close();
-      try {
-        await createDatabaseUser(mongoUri, dbName, appUser, appPassword);
-        console.log('✅ Database setup complete (indexes handled by Mongoose)');
-      } catch (userError) {
-        console.log('⚠️  Database user creation failed:', userError.message);
-        console.log('   Continuing setup without user creation...');
-      }
-
-    } catch (error) {
-      console.log('⚠️  MongoDB not running or not accessible');
-      console.log('   Please start MongoDB and run: npm run setup');
-      process.exit(1);
-    }
-
-    // 6. Run tests
+    // 4. Run tests
     await runTests();
 
     console.log('\n🎉 Development setup complete!');
@@ -69,6 +29,5 @@ async function devSetup(useReplica = false) {
   }
 }
 
-// Check command line arguments
 const useReplica = process.argv.includes('--replica');
 devSetup(useReplica);

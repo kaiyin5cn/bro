@@ -1,20 +1,31 @@
 # URL Shortener
 
-## Setup Instructions
+## Quick Setup
 
 ### Backend Setup
 1. Navigate to backend folder: `cd backend`
-2. Install dependencies: `npm install`
-3. Copy environment file: `cp .env.example .env`
-4. Update `.env` with your configuration
-5. Start server: `npm start`
+2. Run setup script: `npm run setup`
+3. Start server: `npm run dev`
 
 ### Frontend Setup
 1. Navigate to frontend folder: `cd frontend`
-2. Install dependencies: `npm install`
-3. Copy environment file: `cp .env.example .env`
-4. Update `.env` with your configuration
-5. Start development server: `npm run dev`
+2. Run setup script: `npm run setup`
+3. Start development server: `npm run dev`
+
+### Manual Setup (Alternative)
+
+**Backend:**
+1. `cd backend`
+2. `npm install`
+3. Copy `.env.example` to `.env`
+4. Update `.env` with your MongoDB configuration
+5. `npm run dev`
+
+**Frontend:**
+1. `cd frontend`
+2. `npm install`
+3. Copy `.env.example` to `.env`
+4. `npm run dev`
 
 ### Environment Variables
 
