@@ -1,4 +1,8 @@
 export default {
   testEnvironment: 'node',
-  transform: {}
+  transform: {},
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
+  globals: {
+    'jest': true
+  }
 };
