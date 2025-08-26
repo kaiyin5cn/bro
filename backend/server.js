@@ -6,6 +6,7 @@ import { connectRedis } from './config/redis.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
 import urlRoutes from './routes/url.js';
+import donationRoutes from './routes/donation.js';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ connectRedis();
 // Routes
 app.use('/auth', authRoutes);
 app.use('/admin', adminRoutes);
+app.use('/donation', donationRoutes);
 app.use('/', urlRoutes);
 
 app.listen(PORT, () => {

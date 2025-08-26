@@ -49,3 +49,29 @@ export const validateAdminInput = (req, res, next) => {
   
   next();
 };
+
+export const validateDonationInput = (req, res, next) => {
+  const { donorAddress, amount, deviceId, ipfsCID, dataHash } = req.body;
+  
+  if (!donorAddress || typeof donorAddress !== 'string') {
+    return res.status(400).json({ error: 'Valid donor address is required' });
+  }
+  
+  if (!amount || isNaN(amount) || amount <= 0) {
+    return res.status(400).json({ error: 'Valid donation amount is required' });
+  }
+  
+  if (!deviceId || typeof deviceId !== 'string') {
+    return res.status(400).json({ error: 'Valid device ID is required' });
+  }
+  
+  if (!ipfsCID || typeof ipfsCID !== 'string' || ipfsCID.length !== 46) {
+    return res.status(400).json({ error: 'Valid IPFS CID is required' });
+  }
+  
+  if (!dataHash || typeof dataHash !== 'string') {
+    return res.status(400).json({ error: 'Valid data hash is required' });
+  }
+  
+  next();
+};
