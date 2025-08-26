@@ -1,6 +1,3 @@
-import { MongoClient } from 'mongodb';
-import dotenv from 'dotenv';
-import { setupReplicaSet, createDatabaseUser } from './utils/mongodb-setup.js';
 import { setupEnvironment, installDependencies, runTests } from './utils/system-setup.js';
 
 async function devSetup(useReplica = false) {
@@ -9,12 +6,18 @@ async function devSetup(useReplica = false) {
   try {
     // 1. Setup environment
     await setupEnvironment();
-    dotenv.config();
 
     // 2. Install dependencies
     await installDependencies();
 
-    // 3. Setup MongoDB
+    // 3. Import MongoDB modules after installation
+    const { MongoClient } = await import('mongodb');
+    const dotenv = await import('dotenv');
+    const { setupReplicaSet, createDatabaseUser } = await import('./utils/mongodb-setup.js');
+    
+    dotenv.config();
+
+    // 4. Setup MongoDB
     let mongoUri = process.env.MONGODB_ADMIN_URI || 'mongodb://localhost:27017';
     
     if (useReplica) {
@@ -31,7 +34,7 @@ async function devSetup(useReplica = false) {
       await client.connect();
       console.log('✅ MongoDB connection successful');
 
-      // 4. Create database user
+      // 5. Create database user
       const dbName = process.env.DB_NAME || 'urlshortener';
       const appUser = process.env.DB_USER || 'urlapp';
       const appPassword = process.env.DB_PASSWORD || 'securepassword123';
@@ -51,7 +54,7 @@ async function devSetup(useReplica = false) {
       process.exit(1);
     }
 
-    // 5. Run tests
+    // 6. Run tests
     await runTests();
 
     console.log('\n🎉 Development setup complete!');
