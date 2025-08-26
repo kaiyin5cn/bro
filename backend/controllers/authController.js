@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { logger } from '../utils/logger.js';
 
 export const register = async (req, res) => {
   try {
@@ -37,6 +38,7 @@ export const register = async (req, res) => {
       }
     });
   } catch (error) {
+    logger.error('User registration failed', error, { username: req.body.username });
     if (error.name === 'ValidationError') {
       return res.status(400).json({ error: error.message });
     }
@@ -77,6 +79,7 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
+    logger.error('User login failed', error, { username: req.body.username });
     res.status(500).json({ error: 'Server error' });
   }
 };

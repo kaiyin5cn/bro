@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { logger } from '../utils/logger.js';
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -10,7 +11,7 @@ export const authenticate = async (req, res, next) => {
     }
 
     if (!process.env.JWT_SECRET) {
-      console.error('JWT_SECRET environment variable is not set');
+      logger.error('JWT_SECRET environment variable is not set');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 

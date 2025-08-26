@@ -1,5 +1,6 @@
 import URL from '../models/URL.js';
 import mongoose from 'mongoose';
+import { logger } from '../utils/logger.js';
 
 export const getAllUrls = async (req, res) => {
   try {
@@ -9,6 +10,7 @@ export const getAllUrls = async (req, res) => {
     
     res.json(urls);
   } catch (error) {
+    logger.error('Failed to fetch URLs', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -27,6 +29,7 @@ export const deleteUrl = async (req, res) => {
     
     res.json({ message: 'URL deleted successfully' });
   } catch (error) {
+    logger.error('Failed to delete URL', error, { id: req.params.id });
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -61,6 +64,7 @@ export const updateUrl = async (req, res) => {
     
     res.json(url);
   } catch (error) {
+    logger.error('Failed to update URL', error, { id: req.params.id, shortCode: req.body.shortCode });
     if (error.name === 'ValidationError') {
       return res.status(400).json({ error: error.message });
     }

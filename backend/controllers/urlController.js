@@ -1,6 +1,7 @@
 import URL from '../models/URL.js';
 import { generateShortCode } from '../utils/shortCode.js';
 import { redisClient } from '../config/redis.js';
+import { logger } from '../utils/logger.js';
 
 export const shortenUrl = async (req, res) => {
   try {
@@ -79,12 +80,12 @@ export const shortenUrl = async (req, res) => {
     try {
       await redisClient.setEx(`url:${shortCode}`, 86400, longURL);
     } catch (error) {
-      console.error('Redis cache error:', error);
+      logger.error('Redis cache store failed', error, { shortCode });
     }
 
     res.json({ shortURL: `${process.env.BASE_URL}/${shortCode}` });
   } catch (error) {
-    console.error(error);
+    logger.error('URL shortening failed', error, { longURL: req.body.longURL });
     if (error.name === 'ValidationError') {
       return res.status(400).json({ error: error.message });
     }
@@ -101,7 +102,7 @@ export const redirectUrl = async (req, res) => {
     try {
       longURL = await redisClient.get(`url:${shortCode}`);
     } catch (error) {
-      console.error('Redis get error:', error);
+      logger.error('Redis cache get failed', error, { shortCode });
     }
     
     if (longURL) {
@@ -109,7 +110,7 @@ export const redirectUrl = async (req, res) => {
       URL.findOneAndUpdate(
         { shortCode },
         { $inc: { accessCount: 1 } }
-      ).catch(err => console.error('Access count update error:', err));
+      ).catch(err => logger.error('Access count update failed', err, { shortCode }));
     } else {
       // Cache miss - get from MongoDB
       const urlDoc = await URL.findOneAndUpdate(
@@ -128,7 +129,7 @@ export const redirectUrl = async (req, res) => {
       try {
         await redisClient.setEx(`url:${shortCode}`, 86400, longURL);
       } catch (error) {
-        console.error('Redis set error:', error);
+        logger.error('Redis cache set failed', error, { shortCode });
       }
     }
 
@@ -141,7 +142,7 @@ export const redirectUrl = async (req, res) => {
     
     res.redirect(302, longURL);
   } catch (error) {
-    console.error(error);
+    logger.error('URL redirect failed', error, { shortCode: req.params.shortCode });
     res.status(500).json({ error: 'Server error' });
   }
 };

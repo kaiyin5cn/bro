@@ -1,5 +1,6 @@
 import { createClient } from 'redis';
 import dotenv from 'dotenv';
+import { logger } from '../utils/logger.js';
 
 dotenv.config();
 
@@ -13,24 +14,24 @@ if (REDIS_ENABLED) {
   });
 
   client.on('error', (err) => {
-    console.error('Redis Client Error:', err);
+    logger.error('Redis client error', err);
   });
 
   client.on('connect', () => {
-    console.log('Redis connected');
+    logger.info('Redis connected successfully');
   });
 }
 
 export async function connectRedis() {
   if (!REDIS_ENABLED) {
-    console.log('Redis disabled for development');
+    logger.info('Redis disabled for development');
     return;
   }
   
   try {
     await client.connect();
   } catch (error) {
-    console.error('Redis connection failed:', error);
+    logger.error('Redis connection failed', error);
   }
 }
 
