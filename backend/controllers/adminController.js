@@ -1,4 +1,5 @@
 import URL from '../models/URL.js';
+import mongoose from 'mongoose';
 
 export const getAllUrls = async (req, res) => {
   try {
@@ -14,6 +15,10 @@ export const getAllUrls = async (req, res) => {
 
 export const deleteUrl = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid URL ID' });
+    }
+    
     const url = await URL.findByIdAndDelete(req.params.id);
     
     if (!url) {
@@ -28,6 +33,10 @@ export const deleteUrl = async (req, res) => {
 
 export const updateUrl = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid URL ID' });
+    }
+    
     const { shortCode } = req.body;
     
     if (!shortCode) {

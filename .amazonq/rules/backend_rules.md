@@ -93,8 +93,39 @@ This document outlines the design and implementation of a URL shortener system u
 - **Frontend**: Complete React/TypeScript SPA with persistent login and skeleton loading states
 - **Testing**: Jest unit tests and Artillery load testing with automated reporting
 - **Development**: One-command setup scripts and comprehensive documentation
+- **✅ Security Fixes**: Open redirect protection with domain whitelist, secure CORS policy
 
 **Ready for:** Production deployment or progression to Phase 2 scaling. All frontend-backend integration completed.
+
+---
+
+### **Security Audit & Fixes - ✅ PARTIALLY COMPLETED**
+
+**✅ Fixed Critical Issues:**
+1. **Open Redirect Vulnerability (CWE-601)**: Added domain blacklist validation in `urlController.js`
+   - Configurable via `BLACKLISTED_DOMAINS` environment variable
+   - Prevents shortening of known malicious domains
+   - Protocol restriction: Only HTTP/HTTPS URLs allowed
+   - Default blacklist: malware.com, phishing.com, spam.com
+
+2. **Insecure CORS Policy (CWE-942)**: Restricted CORS to specific origins
+   - Configurable via `ALLOWED_ORIGINS` environment variable  
+   - Default allows: localhost:5173, localhost:3000
+   - Prevents cross-site request forgery attacks
+
+**🔄 Remaining Security Issues:**
+- **Log Injection (CWE-117)**: Unsanitized error logging in multiple files
+- **Missing Authorization**: Insufficient access controls in some components
+- **Error Handling**: Missing JWT_SECRET validation, unhandled exceptions
+- **Input Validation**: Missing ObjectId validation, no rate limiting on auth routes
+- **Performance**: Database queries in loops, race conditions in tests
+
+**Security Configuration:**
+```bash
+# Environment variables for security
+BLACKLISTED_DOMAINS=malware.com,phishing.com,spam.com
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+```
 
 **Current Project Structure:**
 ```
@@ -123,6 +154,7 @@ bro/
 2. **✅ COMPLETED**: Security fixes with proper authentication system  
 3. **✅ COMPLETED**: Controller architecture refactoring for better maintainability
 4. **✅ COMPLETED**: Admin shortCode editing with validation and UX improvements
+5. **✅ COMPLETED**: Critical security vulnerabilities fixed (Open Redirect, CORS)
 
 **Next Steps:**
 1. **✅ COMPLETED**: NGINX Load Balancer with PM2 cluster management

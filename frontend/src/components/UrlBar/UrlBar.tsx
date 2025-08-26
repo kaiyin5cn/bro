@@ -9,6 +9,7 @@ function UrlBar() {
   const [loading, setLoading] = useState(false)
   const [shortenedUrl, setShortenedUrl] = useState('')
   const [error, setError] = useState('')
+  const [processedUrls, setProcessedUrls] = useState<Set<string>>(new Set())
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -17,15 +18,30 @@ function UrlBar() {
       return
     }
     
+    // Check if URL already processed
+    if (processedUrls.has(url.trim())) {
+      setError('This URL has already been shortened')
+      return
+    }
+    
+    // Prevent shortening our own short URLs
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8828'
+    const shortUrlPattern = new RegExp(`^${baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[a-zA-Z0-9]{7}$`)
+    if (shortUrlPattern.test(url.trim())) {
+      setError('Cannot shorten an already shortened URL')
+      return
+    }
+    
     setLoading(true)
+    setError('')
     
     try {
-      setError('')
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/shorten`, {
         longURL: url
       })
       
       setShortenedUrl(response.data.shortURL)
+      setProcessedUrls(prev => new Set(prev).add(url.trim()))
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to shorten URL'
       setError(errorMessage)

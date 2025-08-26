@@ -9,7 +9,12 @@ export const register = async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    const existingUser = await User.findOne({ username });
+    // Validate input types to prevent NoSQL injection
+    if (typeof username !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Invalid input format' });
+    }
+
+    const existingUser = await User.findOne({ username: username.trim() });
     if (existingUser) {
       return res.status(400).json({ error: 'Username already exists' });
     }
@@ -47,7 +52,12 @@ export const login = async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    const user = await User.findOne({ username });
+    // Validate input types to prevent NoSQL injection
+    if (typeof username !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+
+    const user = await User.findOne({ username: username.trim() });
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
