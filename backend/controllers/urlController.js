@@ -1,4 +1,4 @@
-import URL from '../models/URL.js';
+import Url from '../models/URL.js';
 import { generateShortCode } from '../utils/shortCode.js';
 import { redisClient } from '../config/redis.js';
 import { logger } from '../utils/logger.js';
@@ -11,37 +11,24 @@ export const shortenUrl = async (req, res) => {
       return res.status(400).json({ error: 'longURL is required' });
     }
 
-    // Validate URL and check against blacklisted domains
+    let finalURL = longURL.trim();
+    
+    // Validate URL format
     try {
-      const url = new URL(longURL.trim());
-      
-      // Only allow HTTP/HTTPS protocols
-      if (!['http:', 'https:'].includes(url.protocol)) {
-        return res.status(400).json({ error: 'Only HTTP and HTTPS URLs are allowed' });
-      }
-      
-      // Check against blacklisted domains
-      const blacklistedDomains = (process.env.BLACKLISTED_DOMAINS || 'malware.com,phishing.com,spam.com').split(',');
-      const isBlacklisted = blacklistedDomains.some(domain => 
-        url.hostname === domain || url.hostname.endsWith('.' + domain)
-      );
-      
-      if (isBlacklisted) {
-        return res.status(400).json({ error: 'Domain is not allowed for shortening' });
-      }
+      new URL(finalURL);
     } catch (error) {
       return res.status(400).json({ error: 'Invalid URL format' });
     }
 
-    // Prevent shortening our own short URLs
-    const baseUrl = process.env.BASE_URL || 'http://localhost:8828';
-    const shortUrlPattern = new RegExp(`^${baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[a-zA-Z0-9]{7}$`);
-    if (shortUrlPattern.test(longURL.trim())) {
-      return res.status(400).json({ error: 'Cannot shorten an already shortened URL' });
-    }
-
+    // Log client request
+    logger.info('URL shortening request', {
+      ip: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      longURL: finalURL
+    });
+    
     // Check if URL already exists
-    const existingURL = await URL.findOne({ longURL });
+    const existingURL = await Url.findOne({ longURL: finalURL });
     if (existingURL) {
       return res.json({ shortURL: `${process.env.BASE_URL}/${existingURL.shortCode}` });
     }
@@ -57,7 +44,7 @@ export const shortenUrl = async (req, res) => {
     }
     
     // Check all candidates in single query
-    const existingCodes = await URL.find({ 
+    const existingCodes = await Url.find({ 
       shortCode: { $in: candidates } 
     }).select('shortCode');
     
@@ -69,8 +56,8 @@ export const shortenUrl = async (req, res) => {
     }
 
     // Save to database
-    const urlDoc = new URL({
-      longURL,
+    const urlDoc = new Url({
+      longURL: finalURL,
       shortCode
     });
     
@@ -78,7 +65,7 @@ export const shortenUrl = async (req, res) => {
 
     // Cache in Redis with 24-hour TTL
     try {
-      await redisClient.setEx(`url:${shortCode}`, 86400, longURL);
+      await redisClient.setEx(`url:${shortCode}`, 86400, finalURL);
     } catch (error) {
       logger.error('Redis cache store failed', error, { shortCode });
     }
@@ -96,6 +83,14 @@ export const shortenUrl = async (req, res) => {
 export const redirectUrl = async (req, res) => {
   try {
     const { shortCode } = req.params;
+    
+    // Log redirect request
+    logger.info('URL redirect request', {
+      ip: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent'),
+      shortCode
+    });
+    
     let longURL;
     
     // Try Redis cache first
@@ -107,13 +102,13 @@ export const redirectUrl = async (req, res) => {
     
     if (longURL) {
       // Cache hit - increment access count in background
-      URL.findOneAndUpdate(
+      Url.findOneAndUpdate(
         { shortCode },
         { $inc: { accessCount: 1 } }
       ).catch(err => logger.error('Access count update failed', err, { shortCode }));
     } else {
       // Cache miss - get from MongoDB
-      const urlDoc = await URL.findOneAndUpdate(
+      const urlDoc = await Url.findOneAndUpdate(
         { shortCode },
         { $inc: { accessCount: 1 } },
         { new: true }

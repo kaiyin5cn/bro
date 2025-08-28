@@ -1,16 +1,9 @@
 import mongoose from 'mongoose';
-import validUrl from 'valid-url';
 
 const urlSchema = new mongoose.Schema({
   longURL: { 
     type: String, 
     required: [true, 'Long URL is required'],
-    validate: {
-      validator: function(v) {
-        return validUrl.isUri(v);
-      },
-      message: 'Invalid URL format'
-    },
     trim: true,
     index: true
   },

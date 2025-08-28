@@ -40,7 +40,7 @@ try {
 
 try {
   // Run test and save JSON report
-  execSync(`artillery run tests/load-test.yml --output ${jsonReport}`, { stdio: 'inherit' });
+  execSync(`artillery run load-tests/load-test.yml --output ${jsonReport}`, { stdio: 'inherit' });
   
   // Generate HTML report
   execSync(`artillery report ${jsonReport} --output ${htmlReport}`, { stdio: 'inherit' });

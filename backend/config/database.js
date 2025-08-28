@@ -6,7 +6,7 @@ dotenv.config();
 export async function connectDB() {
   try {
     const options = {
-      maxPoolSize: 10,
+      maxPoolSize: 500,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
       bufferCommands: false

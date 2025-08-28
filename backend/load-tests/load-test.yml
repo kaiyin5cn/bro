@@ -1,0 +1,29 @@
+config:
+  target: 'http://localhost:8828'
+  phases:
+    - duration: 10
+      arrivalRate: 100
+  payload:
+    path: './test-urls.csv'
+    fields:
+      - longURL
+
+scenarios:
+  - name: "Shorten URL"
+    weight: 70
+    flow:
+      - post:
+          url: "/shorten"
+          json:
+            longURL: "{{ longURL }}"
+          capture:
+            - json: "$.shortURL"
+              as: "shortURL"
+  - name: "Redirect URL"
+    weight: 30
+    flow:
+      - get:
+          url: "/abc1234"  # Test with known short code
+          followRedirects: false
+          expect:
+            - statusCode: 302
