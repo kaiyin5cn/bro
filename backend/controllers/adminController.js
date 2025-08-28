@@ -4,11 +4,33 @@ import { logger } from '../utils/logger.js';
 
 export const getAllUrls = async (req, res) => {
   try {
-    const urls = await URL.find({})
-      .sort({ createdAt: -1 })
-      .limit(100);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 25;
+    const sortField = req.query.sortField || 'createdAt';
+    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
     
-    res.json(urls);
+    const skip = (page - 1) * limit;
+    
+    // Build sort object
+    const sort = { [sortField]: sortOrder };
+    
+    const [urls, total] = await Promise.all([
+      URL.find({})
+        .sort(sort)
+        .skip(skip)
+        .limit(limit),
+      URL.countDocuments({})
+    ]);
+    
+    res.json({
+      urls,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     logger.error('Failed to fetch URLs', error);
     res.status(500).json({ error: 'Server error' });

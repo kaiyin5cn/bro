@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FiEdit, FiTrash2 } from 'react-icons/fi'
+import { FiEdit, FiTrash2, FiChevronUp, FiChevronDown } from 'react-icons/fi'
 import axios from 'axios'
 import './Dashboard.css'
 
@@ -19,6 +19,9 @@ interface Modal {
   item: UrlData | null;
 }
 
+type SortField = 'longURL' | 'shortCode' | 'accessCount' | 'createdAt'
+type SortOrder = 'asc' | 'desc'
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token')
   return token ? { Authorization: `Bearer ${token}` } : {}
@@ -34,17 +37,34 @@ function Dashboard({ onLogout }: DashboardProps) {
   const [editModal, setEditModal] = useState<Modal>({ show: false, item: null })
   const [deleteModal, setDeleteModal] = useState<Modal>({ show: false, item: null })
   const [editValue, setEditValue] = useState('')
+  const [sortField, setSortField] = useState<SortField>('createdAt')
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(25)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalItems, setTotalItems] = useState(0)
 
   useEffect(() => {
     fetchUrls()
-  }, [])
+  }, [currentPage, itemsPerPage, sortField, sortOrder])
 
   const fetchUrls = async () => {
     try {
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+        sortField,
+        sortOrder
+      }
+      
       const response = await axios.get(`${API_BASE}/admin/urls`, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
+        params
       })
-      setUrlData(response.data)
+      
+      setUrlData(response.data.urls)
+      setTotalPages(response.data.pagination.pages)
+      setTotalItems(response.data.pagination.total)
     } catch (error) {
       if (error.response?.status === 401) {
         onLogout()
@@ -89,6 +109,23 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
   }
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortOrder('asc')
+    }
+    setCurrentPage(1) // Reset to first page when sorting
+  }
+
+  // Data is already sorted by backend
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return null
+    return sortOrder === 'asc' ? <FiChevronUp /> : <FiChevronDown />
+  }
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -101,14 +138,63 @@ function Dashboard({ onLogout }: DashboardProps) {
         {loading ? (
           <div></div>
         ) : (
-          <div className="table-container">
-            <table className="url-table">
+          <>
+            <div className="table-controls">
+              <div className="items-per-page">
+                <label>Items per page:</label>
+                <select 
+                  value={itemsPerPage} 
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value))
+                    setCurrentPage(1)
+                  }}
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+              <div className="pagination-top">
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="pagination-btn"
+                >
+                  ← Previous
+                </button>
+                
+                <span className="pagination-info">
+                  Page {currentPage} of {totalPages}
+                </span>
+                
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="pagination-btn"
+                >
+                  Next →
+                </button>
+              </div>
+              <div className="total-items">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} items
+              </div>
+            </div>
+            <div className="table-container">
+              <table className="url-table">
               <thead>
                 <tr>
-                  <th>URL</th>
-                  <th>Short Code</th>
-                  <th>Access Count</th>
-                  <th>Created</th>
+                  <th className="sortable" onClick={() => handleSort('longURL')}>
+                    URL <SortIcon field="longURL" />
+                  </th>
+                  <th className="sortable" onClick={() => handleSort('shortCode')}>
+                    Short Code <SortIcon field="shortCode" />
+                  </th>
+                  <th className="sortable" onClick={() => handleSort('accessCount')}>
+                    Access Count <SortIcon field="accessCount" />
+                  </th>
+                  <th className="sortable" onClick={() => handleSort('createdAt')}>
+                    Created <SortIcon field="createdAt" />
+                  </th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -138,6 +224,28 @@ function Dashboard({ onLogout }: DashboardProps) {
                 </tbody>
               </table>
             </div>
+            <div className="pagination">
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="pagination-btn"
+              >
+                Previous
+              </button>
+              
+              <div className="pagination-info">
+                Page {currentPage} of {totalPages}
+              </div>
+              
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="pagination-btn"
+              >
+                Next
+              </button>
+            </div>
+          </>
           )}
         </div>
       
