@@ -50,27 +50,52 @@ export const validateAdminInput = (req, res, next) => {
   next();
 };
 
-export const validateDonationInput = (req, res, next) => {
-  const { donorAddress, amount, deviceId, ipfsCID, dataHash } = req.body;
+export const validateDonationTracking = (req, res, next) => {
+  const { transactionHash, donorAddress, ethAmount, usdAmount } = req.body;
+  
+  if (!transactionHash || typeof transactionHash !== 'string') {
+    return res.status(400).json({ error: 'Valid transaction hash is required' });
+  }
   
   if (!donorAddress || typeof donorAddress !== 'string') {
     return res.status(400).json({ error: 'Valid donor address is required' });
   }
   
-  if (!amount || isNaN(amount) || amount <= 0) {
-    return res.status(400).json({ error: 'Valid donation amount is required' });
+  if (!ethAmount || isNaN(ethAmount) || ethAmount <= 0) {
+    return res.status(400).json({ error: 'Valid ETH amount is required' });
   }
   
-  if (!deviceId || typeof deviceId !== 'string') {
-    return res.status(400).json({ error: 'Valid device ID is required' });
+  if (!usdAmount || isNaN(usdAmount) || usdAmount < 0) {
+    return res.status(400).json({ error: 'Valid USD amount is required' });
   }
   
-  if (!ipfsCID || typeof ipfsCID !== 'string' || ipfsCID.length !== 46) {
-    return res.status(400).json({ error: 'Valid IPFS CID is required' });
+  // Validate Ethereum address format
+  if (!/^0x[a-fA-F0-9]{40}$/.test(donorAddress)) {
+    return res.status(400).json({ error: 'Invalid Ethereum address format' });
   }
   
-  if (!dataHash || typeof dataHash !== 'string') {
-    return res.status(400).json({ error: 'Valid data hash is required' });
+  // Validate transaction hash format
+  if (!/^0x[a-fA-F0-9]{64}$/.test(transactionHash)) {
+    return res.status(400).json({ error: 'Invalid transaction hash format' });
+  }
+  
+  next();
+};
+
+export const validateDonationInput = (req, res, next) => {
+  const { donorAddress, ethAmount } = req.body;
+  
+  if (!donorAddress || typeof donorAddress !== 'string') {
+    return res.status(400).json({ error: 'Valid donor address is required' });
+  }
+  
+  if (!ethAmount || isNaN(ethAmount) || ethAmount <= 0) {
+    return res.status(400).json({ error: 'Valid ETH amount is required' });
+  }
+  
+  // Validate Ethereum address format
+  if (!/^0x[a-fA-F0-9]{40}$/.test(donorAddress)) {
+    return res.status(400).json({ error: 'Invalid Ethereum address format' });
   }
   
   next();

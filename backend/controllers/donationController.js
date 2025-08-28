@@ -1,54 +1,50 @@
 import { ethers } from 'ethers';
 import { logger } from '../utils/logger.js';
+import Donation from '../models/Donation.js';
 
 const SEPOLIA_RPC = process.env.SEPOLIA_RPC_URL || 'https://sepolia.infura.io/v3/YOUR_PROJECT_ID';
-const CONTRACT_ADDRESS = process.env.NFT_CONTRACT_ADDRESS;
+const CONTRACT_ADDRESS = process.env.NFT_CONTRACT_ADDRESS || '0xD8462e0A1a78E8ac07e0A414B5539680689071C8';
 const PRIVATE_KEY = process.env.MINTER_PRIVATE_KEY;
-
-// Simple ABI for donation function
-const CONTRACT_ABI = [
-  "function donateAndMint(string deviceId, string transactionId, string ipfsCID, bytes32 dataHash) external payable returns (uint256)",
-  "function donations(address) external view returns (uint256)",
-  "event DeviceMinted(uint256 indexed tokenId, string deviceId, string transactionId, string ipfsCID, bytes32 dataHash)"
+// Donation contract ABI
+const DONATION_CONTRACT_ABI = [
+  "function donate() external payable",
+  "function getDonationHistory(address donor) external view returns (tuple(uint256,uint256,uint256,bool,uint256)[])",
+  "function ethToUSD(uint256 ethAmount) external view returns (uint256)",
+  "event DonationReceived(address indexed donor, uint256 ethAmount, uint256 usdAmount, bool nftMinted, uint256 tokenId)"
 ];
 
-export const createDonation = async (req, res) => {
+export const trackDonation = async (req, res) => {
   try {
-    const { donorAddress, amount, deviceId, ipfsCID, dataHash } = req.body;
+    const { transactionHash, donorAddress, ethAmount, usdAmount } = req.body;
     
-    if (!donorAddress || !amount || !deviceId || !ipfsCID || !dataHash) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!transactionHash || !donorAddress || !ethAmount || !usdAmount) {
+      return res.status(400).json({ error: 'Transaction hash, donor address, ETH amount, and USD amount are required' });
     }
 
-    // Generate unique transaction ID
-    const transactionId = `donation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Save donation to database
+    const donation = new Donation({
+      donorAddress,
+      amount: usdAmount,
+      transactionHash,
+      status: 'confirmed',
+      nftMinted: usdAmount >= 100
+    });
     
-    // Connect to Sepolia
-    const provider = new ethers.JsonRpcProvider(SEPOLIA_RPC);
-    const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet);
+    await donation.save();
     
-    // Call donateAndMint function
-    const tx = await contract.donateAndMint(
-      deviceId,
-      transactionId,
-      ipfsCID,
-      ethers.keccak256(ethers.toUtf8Bytes(dataHash)),
-      { value: ethers.parseEther(amount.toString()) }
-    );
-    
-    logger.info('Donation transaction sent', { txHash: tx.hash, donorAddress, amount });
+    logger.info('Donation tracked', { transactionHash, donorAddress, ethAmount, usdAmount });
     
     res.json({
       success: true,
-      transactionHash: tx.hash,
-      transactionId,
-      message: 'Donation submitted, NFT will be minted upon confirmation'
+      message: 'Donation tracked successfully'
     });
     
   } catch (error) {
-    logger.error('Donation failed', error, { donorAddress: req.body.donorAddress });
-    res.status(500).json({ error: 'Donation processing failed' });
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Transaction already tracked' });
+    }
+    logger.error('Donation tracking failed', error, { transactionHash: req.body.transactionHash });
+    res.status(500).json({ error: 'Donation tracking failed' });
   }
 };
 
@@ -72,5 +68,38 @@ export const getDonationStatus = async (req, res) => {
   } catch (error) {
     logger.error('Status check failed', error, { txHash: req.params.txHash });
     res.status(500).json({ error: 'Status check failed' });
+  }
+};
+
+export const getDonationHistory = async (req, res) => {
+  try {
+    const { address } = req.params;
+    
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+      return res.status(400).json({ error: 'Invalid Ethereum address format' });
+    }
+    
+    const provider = new ethers.JsonRpcProvider(SEPOLIA_RPC);
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, DONATION_CONTRACT_ABI, provider);
+    
+    // Get donation history from contract
+    const contractHistory = await contract.getDonationHistory(address);
+    
+    const donations = contractHistory.map((donation) => ({
+      ethAmount: ethers.formatEther(donation[0]),
+      usdAmount: parseFloat(ethers.formatEther(donation[1])),
+      timestamp: Number(donation[2]),
+      nftMinted: donation[3],
+      tokenId: donation[3] ? Number(donation[4]) : null
+    }));
+    
+    res.json({
+      success: true,
+      donations
+    });
+    
+  } catch (error) {
+    logger.error('Donation history fetch failed', error, { address: req.params.address });
+    res.status(500).json({ error: 'Failed to fetch donation history' });
   }
 };

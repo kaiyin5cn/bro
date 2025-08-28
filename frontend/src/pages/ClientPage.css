@@ -7,3 +7,19 @@
   padding: 1rem;
   gap: 2rem;
 }
+
+.support-btn {
+  padding: 12px 24px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.support-btn:hover {
+  background: #218838;
+}

@@ -154,27 +154,30 @@ JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 **Current Project Structure:**
 ```
 bro/
-├── backend/           # Phase 1 Complete - Production Ready
-│   ├── server.js      # Express server with /shorten and /:shortCode endpoints
-│   ├── models/URL.js  # Mongoose schema with validation and TTL
+├── backend/           # Phase 1 Complete - Production Ready + Web3
+│   ├── server.js      # Express server with /shorten, /:shortCode, and /donation endpoints
+│   ├── models/        # Mongoose schemas: URL.js, User.js, Donation.js
+│   ├── controllers/   # Business logic: urlController, authController, adminController, donationController
+│   ├── contracts/     # Solidity smart contracts: DonationContract.sol, ERBProjectNFT.sol
+│   ├── routes/        # API routes: url.js, auth.js, admin.js, donation.js
+│   ├── middleware/    # Validation and authentication middleware
 │   ├── utils/shortCode.js # Base62 generation utility
-│   ├── config/database.js # MongoDB connection with options
+│   ├── config/        # Database and Redis connection configs
 │   ├── tests/         # Jest unit tests + Artillery load tests
 │   └── scripts/       # Automated setup and configuration
-├── frontend/          # React/TypeScript SPA - Complete
-│   ├── src/components/ # URL shortening UI + Admin dashboard
+├── frontend/          # React/TypeScript SPA - Complete + Web3
+│   ├── src/components/ # URL shortening UI + Admin dashboard + DonationModal
+│   ├── src/hooks/     # Web3 integration: useWeb3.ts
 │   ├── src/pages/     # Client and Admin pages
 │   └── PROGRESS.md    # Frontend implementation status
-└── nginx/             # Phase 2 Load Balancer - Complete
-    ├── nginx.conf     # NGINX reverse proxy configuration
-    ├── ecosystem.config.js # PM2 cluster configuration (4 instances)
-    ├── start-cluster.bat # Automated cluster startup script
-    └── README.md      # Load balancer setup documentation - NEW
-    ├── nginx.conf     # NGINX reverse proxy configuration
-    ├── ecosystem.config.js # PM2 cluster configuration (4 instances)
-    ├── start-cluster.bat # Automated cluster startup script
-    ├── logs/          # PM2 log files directory
-    └── README.md      # Load balancer setup documentation
+├── nginx/             # Phase 2 Load Balancer - Complete
+│   ├── nginx.conf     # NGINX reverse proxy configuration
+│   ├── ecosystem.config.js # PM2 cluster configuration (4 instances)
+│   ├── start-cluster.bat # Automated cluster startup script
+│   └── README.md      # Load balancer setup documentation
+└── redis/             # Redis caching layer
+    ├── start-redis.bat # Redis startup script
+    └── stop-redis.bat  # Redis shutdown script
 ```
 
 **Recent Completions:**
@@ -185,15 +188,30 @@ bro/
 5. **✅ COMPLETED**: Complete security audit fixes (NoSQL injection, input validation, logging)
 6. **✅ COMPLETED**: Performance optimization with batch shortCode generation
 7. **✅ COMPLETED**: Enterprise-grade input validation and error handling
+8. **✅ COMPLETED**: Web3 Donation System with Ethereum smart contracts and NFT rewards
 
 **✅ PHASE 1 & 2 COMPLETED - PRODUCTION READY:**
 1. **✅ COMPLETED**: Core URL shortener with enterprise security
 2. **✅ COMPLETED**: NGINX Load Balancer with PM2 cluster management  
 3. **✅ COMPLETED**: Redis caching layer with failover support
 4. **✅ COMPLETED**: Complete security hardening and performance optimization
+5. **✅ COMPLETED**: Web3 Donation System with Ethereum integration and NFT rewards
+
+**✅ NEW FEATURE COMPLETED - DONATION SYSTEM:**
+13. **✅ Web3 Donation System (COMPLETED):**
+    *   **Smart Contract Integration**: Ethereum donation system with NFT rewards
+    *   **Donation Contract**: Solidity smart contract on Sepolia testnet with Chainlink price feeds
+    *   **NFT Rewards**: Automatic NFT minting for donations ≥ $100 USD via ERBProjectNFT contract
+    *   **Frontend Web3**: React hook (useWeb3.ts) for MetaMask wallet connection and contract interaction
+    *   **Real-time USD Conversion**: Live ETH to USD price display using Chainlink oracles
+    *   **Transaction Tracking**: Backend endpoint (/donation/track) to record completed donations
+    *   **User-Friendly UX**: Layman-friendly error messages and wallet connection flow
+    *   **Security**: Input validation for transaction hashes and Ethereum addresses
+    *   **Database Model**: Donation schema with transaction tracking and NFT status
+    *   **Dependencies**: ethers.js v6.8.0 for Web3 integration
 
 **🎯 READY FOR NEW FEATURES:**
-The system is now production-ready with enterprise-grade security, performance optimization, and scalable architecture. Ready to implement new features on this solid foundation.
+The system is now production-ready with enterprise-grade security, performance optimization, scalable architecture, and a complete Web3 donation system. Ready to implement additional features on this solid foundation.
 
 **Phase 2 Load Balancer Quick Start:**
 ```bash
@@ -211,7 +229,7 @@ curl http://localhost/health
 curl -X POST http://localhost/shorten -H "Content-Type: application/json" -d "{\"longURL\":\"https://example.com\"}"
 ```
 
-**Quick Start with Authentication:**
+**Quick Start with Authentication & Donations:**
 ```bash
 # Backend setup
 cd backend
@@ -223,6 +241,18 @@ cd frontend
 npm install && npm run dev
 
 # Login credentials: admin/admin123
+# Donation system: Connect MetaMask wallet to donate ETH and receive NFTs
+```
+
+**Donation System Configuration:**
+```bash
+# Environment variables for Web3 integration
+SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+NFT_CONTRACT_ADDRESS=0xD8462e0A1a78E8ac07e0A414B5539680689071C8
+MINTER_PRIVATE_KEY=0x...    # Backend wallet private key
+ERB_NFT_CONTRACT=0x1Fd55F2D5Bc41747274D355d051f00CCCD33b81d
+DONATION_CONTRACT=0xD8462e0A1a78E8ac07e0A414B5539680689071C8
+CONTRACT_OWNER=0x4D3666532127d9d9e6E13D64399c55f68BE0E402
 ```
 
 ---
