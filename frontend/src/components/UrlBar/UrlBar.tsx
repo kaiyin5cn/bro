@@ -39,7 +39,6 @@ function UrlBar() {
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/shorten`, {
         longURL: url
       })
-      
       setShortenedUrl(response.data.shortURL)
       setProcessedUrls(prev => new Set(prev).add(url.trim()))
     } catch (error: any) {
@@ -57,7 +56,7 @@ function UrlBar() {
         <div className="pill-input">
           <FiLink className="url-icon" />
           <input
-            type="url"
+            type="text"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="Enter URL here..."

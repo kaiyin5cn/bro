@@ -7,7 +7,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<ClientPage />} />
-        <Route path="/admin_dashboard" element={<AdminPage />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </Router>
   )
