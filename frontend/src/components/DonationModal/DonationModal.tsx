@@ -68,7 +68,8 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
       
       if (receipt.status === 1) {
         // Track the donation in backend
-        await fetch('/donation/track', {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8828';
+        await fetch(`${API_BASE}/donation/track`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
