@@ -1,4 +1,4 @@
-import URL from '../models/URL.js';
+import Url from '../models/URL.js';
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger.js';
 
@@ -15,11 +15,11 @@ export const getAllUrls = async (req, res) => {
     const sort = { [sortField]: sortOrder };
     
     const [urls, total] = await Promise.all([
-      URL.find({})
+      Url.find({})
         .sort(sort)
         .skip(skip)
         .limit(limit),
-      URL.countDocuments({})
+      Url.countDocuments({})
     ]);
     
     res.json({
@@ -43,7 +43,7 @@ export const deleteUrl = async (req, res) => {
       return res.status(400).json({ error: 'Invalid URL ID' });
     }
     
-    const url = await URL.findByIdAndDelete(req.params.id);
+    const url = await Url.findByIdAndDelete(req.params.id);
     
     if (!url) {
       return res.status(404).json({ error: 'URL not found' });
@@ -69,12 +69,12 @@ export const updateUrl = async (req, res) => {
     }
     
     // Check if shortCode already exists
-    const existingUrl = await URL.findOne({ shortCode, _id: { $ne: req.params.id } });
+    const existingUrl = await Url.findOne({ shortCode, _id: { $ne: req.params.id } });
     if (existingUrl) {
       return res.status(400).json({ error: 'Short code already exists' });
     }
     
-    const url = await URL.findByIdAndUpdate(
+    const url = await Url.findByIdAndUpdate(
       req.params.id,
       { shortCode },
       { new: true, runValidators: true }
