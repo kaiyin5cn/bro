@@ -33,35 +33,35 @@ export const shortenUrl = async (req, res) => {
       return res.json({ shortURL: `${process.env.BASE_URL}/${existingURL.shortCode}` });
     }
 
-    // Generate unique shortCode with batch checking
-    let shortCode;
-    const batchSize = 5;
-    const candidates = [];
+    // Generate and save with retry on collision
+    let urlDoc;
+    let attempts = 0;
+    const maxAttempts = 5;
     
-    // Generate batch of candidates
-    for (let i = 0; i < batchSize; i++) {
-      candidates.push(generateShortCode());
+    while (attempts < maxAttempts) {
+      const shortCode = generateShortCode();
+      
+      try {
+        urlDoc = new Url({
+          longURL: finalURL,
+          shortCode
+        });
+        
+        await urlDoc.save();
+        break; // Success, exit loop
+      } catch (error) {
+        if (error.code === 11000) {
+          // Duplicate key error, try again
+          attempts++;
+          continue;
+        }
+        throw error; // Other error, rethrow
+      }
     }
     
-    // Check all candidates in single query
-    const existingCodes = await Url.find({ 
-      shortCode: { $in: candidates } 
-    }).select('shortCode');
-    
-    const existingSet = new Set(existingCodes.map(doc => doc.shortCode));
-    shortCode = candidates.find(code => !existingSet.has(code));
-    
-    if (!shortCode) {
+    if (attempts >= maxAttempts) {
       return res.status(500).json({ error: 'Unable to generate unique short code' });
     }
-
-    // Save to database
-    const urlDoc = new Url({
-      longURL: finalURL,
-      shortCode
-    });
-    
-    await urlDoc.save();
 
     // Cache in Redis with 24-hour TTL
     try {
@@ -93,42 +93,25 @@ export const redirectUrl = async (req, res) => {
     
     let longURL;
     
-    // Try Redis cache first
+    // 1. Try Redis cache first
     try {
       longURL = await redisClient.get(`url:${shortCode}`);
     } catch (error) {
       logger.error('Redis cache get failed', error, { shortCode });
     }
     
-    if (longURL) {
-      // Cache hit - increment access count in background
-      Url.findOneAndUpdate(
-        { shortCode },
-        { $inc: { accessCount: 1 } }
-      ).catch(err => logger.error('Access count update failed', err, { shortCode }));
-    } else {
-      // Cache miss - get from MongoDB
-      const urlDoc = await Url.findOneAndUpdate(
-        { shortCode },
-        { $inc: { accessCount: 1 } },
-        { new: true }
-      );
+    // 2. If not in cache, find URL in database
+    if (!longURL) {
+      const urlDoc = await Url.findOne({ shortCode });
       
       if (!urlDoc) {
         return res.status(404).json({ error: 'URL not found' });
       }
       
       longURL = urlDoc.longURL;
-      
-      // Cache for future requests
-      try {
-        await redisClient.setEx(`url:${shortCode}`, 86400, longURL);
-      } catch (error) {
-        logger.error('Redis cache set failed', error, { shortCode });
-      }
     }
 
-    // Prevent caching to ensure accessCount increments
+    // 3. Redirect immediately if URL found
     res.set({
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
@@ -136,6 +119,23 @@ export const redirectUrl = async (req, res) => {
     });
     
     res.redirect(302, longURL);
+    
+    // 4. Update access count and cache in background
+    process.nextTick(async () => {
+      try {
+        // Update access count
+        await Url.findOneAndUpdate(
+          { shortCode },
+          { $inc: { accessCount: 1 } }
+        );
+        
+        // Cache in Redis for future requests
+        await redisClient.setEx(`url:${shortCode}`, 86400, longURL);
+      } catch (error) {
+        logger.error('Background update failed', error, { shortCode });
+      }
+    });
+    
   } catch (error) {
     logger.error('URL redirect failed', error, { shortCode: req.params.shortCode });
     res.status(500).json({ error: 'Server error' });
