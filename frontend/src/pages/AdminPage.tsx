@@ -1,40 +1,28 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import Login from '../components/Login/Login'
 import Dashboard from '../components/Dashboard/Dashboard'
+import { useAuthStore } from '../store/authStore'
 import './AdminPage.css'
 
 function AdminPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const { isLoggedIn, notification, notificationType, initializeAuth, logout } = useAuthStore()
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      setIsLoggedIn(true)
-    }
-    setLoading(false)
+    initializeAuth()
   }, [])
-
-  const handleLogin = (user: { id: string; username: string; role: string } | null) => {
-    setIsLoggedIn(!!user)
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setIsLoggedIn(false)
-  }
-
-  if (loading) {
-    return <div className="admin-page loading">Loading...</div>
-  }
 
   return (
     <div className="admin-page">
       {isLoggedIn ? (
-        <Dashboard onLogout={handleLogout} />
+        <Dashboard onLogout={logout} />
       ) : (
-        <Login onLogin={handleLogin} />
+        <Login />
+      )}
+      
+      {notification && (
+        <div className={`notification ${notificationType}`}>
+          {notification}
+        </div>
       )}
     </div>
   )

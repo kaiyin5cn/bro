@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import './DonationModal.css';
 import { useWeb3 } from '../../hooks/useWeb3';
+import { DonationValidator } from '../../constants/validation';
+import { useDonationStore } from '../../store/donationStore';
 
 interface DonationModalProps {
   isOpen: boolean;
@@ -8,10 +10,17 @@ interface DonationModalProps {
 }
 
 const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
-  const [ethAmount, setEthAmount] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [usdAmount, setUsdAmount] = useState<number | null>(null);
+  const { 
+    ethAmount, 
+    usdAmount, 
+    isLoading, 
+    message,
+    setEthAmount,
+    setUsdAmount,
+    setLoading,
+    setMessage,
+    reset
+  } = useDonationStore();
   
   const { account, isConnecting, connectWallet, donate, getUSDAmount } = useWeb3();
 
@@ -52,12 +61,14 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    if (!ethAmount || parseFloat(ethAmount) <= 0) {
-      setMessage('Please enter a valid ETH amount');
+    // Validate ETH amount using validation class
+    const validation = DonationValidator.validateEthAmount(ethAmount);
+    if (!validation.isValid) {
+      setMessage(validation.error!);
       return;
     }
 
-    setIsLoading(true);
+    setLoading(true);
     setMessage('');
 
     try {
@@ -82,8 +93,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
         
         const nftEligible = usdAmount && usdAmount >= 100;
         setMessage(`Donation successful! ${nftEligible ? 'NFT minted to your wallet.' : 'NFT requires minimum $100 USD.'}`);
-        setEthAmount('');
-        setUsdAmount(null);
+        reset();
       } else {
         setMessage('Transaction failed');
       }
@@ -100,7 +110,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
         setMessage('Something went wrong. Please check your connection and try again.');
       }
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 

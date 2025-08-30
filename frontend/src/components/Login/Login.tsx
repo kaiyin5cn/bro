@@ -1,18 +1,33 @@
 import { useState } from 'react'
 import { FiUser, FiLock } from 'react-icons/fi'
 import axios from 'axios'
+import { AuthValidator } from '../../constants/validation'
+import { useAuthStore } from '../../store/authStore'
 import './Login.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8828'
 
-function Login({ onLogin }) {
+function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const { loading, error, login, setLoading, setError, setNotification } = useAuthStore()
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate inputs using validation classes
+    const usernameValidation = AuthValidator.validateUsername(username)
+    if (!usernameValidation.isValid) {
+      setError(usernameValidation.error!)
+      return
+    }
+    
+    const passwordValidation = AuthValidator.validatePassword(password)
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.error!)
+      return
+    }
+    
     setLoading(true)
     setError('')
 
@@ -20,29 +35,29 @@ function Login({ onLogin }) {
     
     try {
       const response = await axios.post(`${API_BASE}/auth/login`, {
-        username,
+        username: username.trim(),
         password
       })
       
       const { token, user } = response.data
-      localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(user))
       
       // Ensure minimum 2-second delay
       const elapsed = Date.now() - startTime
       const remainingDelay = Math.max(0, 2000 - elapsed)
       
       setTimeout(() => {
-        onLogin(user)
+        login(user, token)
         setLoading(false)
       }, remainingDelay)
-    } catch (error) {
+    } catch (error: any) {
       // Ensure minimum 2-second delay for errors too
       const elapsed = Date.now() - startTime
       const remainingDelay = Math.max(0, 2000 - elapsed)
       
       setTimeout(() => {
-        setError(error.response?.data?.error || 'Login failed')
+        const errorMessage = error.response?.data?.error || 'Login failed'
+        setError(errorMessage)
+        setNotification(errorMessage, 'error')
         setLoading(false)
       }, remainingDelay)
     }

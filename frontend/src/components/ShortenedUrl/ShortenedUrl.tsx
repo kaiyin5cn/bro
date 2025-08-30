@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react'
 import { FiCopy, FiCheck } from 'react-icons/fi'
 import './ShortenedUrl.css'
 
-function ShortenedUrl({ url }) {
+interface ShortenedUrlProps {
+  url: string;
+}
+
+function ShortenedUrl({ url }: ShortenedUrlProps) {
   const [copied, setCopied] = useState(false)
   const [animate, setAnimate] = useState(false)
 

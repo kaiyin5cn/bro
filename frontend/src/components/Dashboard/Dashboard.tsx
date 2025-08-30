@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FiEdit, FiTrash2, FiChevronUp, FiChevronDown } from 'react-icons/fi'
 import axios from 'axios'
+import { useAuthStore } from '../../store/authStore'
 import './Dashboard.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8828'
@@ -32,8 +33,10 @@ interface DashboardProps {
 }
 
 function Dashboard({ onLogout }: DashboardProps) {
+  const { logout } = useAuthStore()
   const [urlData, setUrlData] = useState<UrlData[]>([])
   const [loading, setLoading] = useState(true)
+  const [sortLoading, setSortLoading] = useState(false)
   const [editModal, setEditModal] = useState<Modal>({ show: false, item: null })
   const [deleteModal, setDeleteModal] = useState<Modal>({ show: false, item: null })
   const [editValue, setEditValue] = useState('')
@@ -43,13 +46,23 @@ function Dashboard({ onLogout }: DashboardProps) {
   const [itemsPerPage, setItemsPerPage] = useState(25)
   const [totalPages, setTotalPages] = useState(0)
   const [totalItems, setTotalItems] = useState(0)
+  const [notification, setNotification] = useState('')
+  const [notificationType, setNotificationType] = useState<'success' | 'error'>('error')
 
   useEffect(() => {
     fetchUrls()
-  }, [currentPage, itemsPerPage, sortField, sortOrder])
+  }, [currentPage, itemsPerPage])
+  
+  useEffect(() => {
+    if (!loading) {
+      fetchUrls(true)
+    }
+  }, [sortField, sortOrder])
 
-  const fetchUrls = async () => {
+  const fetchUrls = async (isSort = false) => {
     try {
+      if (isSort) setSortLoading(true)
+      
       const params = {
         page: currentPage,
         limit: itemsPerPage,
@@ -65,12 +78,17 @@ function Dashboard({ onLogout }: DashboardProps) {
       setUrlData(response.data.urls)
       setTotalPages(response.data.pagination.pages)
       setTotalItems(response.data.pagination.total)
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.status === 401) {
-        onLogout()
+        logout()
+      } else {
+        setNotificationType('error')
+        setNotification('Failed to load data from server')
+        setTimeout(() => setNotification(''), 5000)
       }
     } finally {
       setLoading(false)
+      setSortLoading(false)
     }
   }
 
@@ -92,8 +110,14 @@ function Dashboard({ onLogout }: DashboardProps) {
       })
       await fetchUrls()
       setEditModal({ show: false, item: null })
-    } catch (error) {
-      console.error('Edit failed:', error)
+      setNotificationType('success')
+      setNotification('URL updated successfully')
+      setTimeout(() => setNotification(''), 3000)
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Edit failed'
+      setNotificationType('error')
+      setNotification(errorMessage)
+      setTimeout(() => setNotification(''), 5000)
     }
   }
 
@@ -104,8 +128,14 @@ function Dashboard({ onLogout }: DashboardProps) {
       })
       await fetchUrls()
       setDeleteModal({ show: false, item: null })
-    } catch (error) {
-      console.error('Delete failed:', error)
+      setNotificationType('success')
+      setNotification('URL deleted successfully')
+      setTimeout(() => setNotification(''), 3000)
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Delete failed'
+      setNotificationType('error')
+      setNotification(errorMessage)
+      setTimeout(() => setNotification(''), 5000)
     }
   }
 
@@ -116,7 +146,7 @@ function Dashboard({ onLogout }: DashboardProps) {
       setSortField(field)
       setSortOrder('asc')
     }
-    setCurrentPage(1) // Reset to first page when sorting
+    setCurrentPage(1)
   }
 
   // Data is already sorted by backend
@@ -199,7 +229,14 @@ function Dashboard({ onLogout }: DashboardProps) {
                 </tr>
               </thead>
               <tbody>
-                {urlData.map(item => (
+                {sortLoading && (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
+                      <div className="loading-spinner">Loading...</div>
+                    </td>
+                  </tr>
+                )}
+                {!sortLoading && urlData.map(item => (
                   <tr key={item._id}>
                     <td className="url-cell">{item.longURL}</td>
                     <td>{item.shortCode}</td>
@@ -277,6 +314,12 @@ function Dashboard({ onLogout }: DashboardProps) {
               <button onClick={() => setDeleteModal({ show: false, item: null })} className="cancel-btn">Cancel</button>
             </div>
           </div>
+        </div>
+      )}
+      
+      {notification && (
+        <div className={`notification ${notificationType}`}>
+          {notification}
         </div>
       )}
     </div>

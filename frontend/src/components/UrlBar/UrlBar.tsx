@@ -1,25 +1,39 @@
-import { useState } from 'react'
 import axios from 'axios'
 import { FiLink, FiSend, FiLoader } from 'react-icons/fi'
 import ShortenedUrl from '../ShortenedUrl/ShortenedUrl'
+import { URLValidator } from '../../constants/validation'
+import { useUrlStore } from '../../store/urlStore'
 import './UrlBar.css'
 
 function UrlBar() {
-  const [url, setUrl] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [shortenedUrl, setShortenedUrl] = useState('')
-  const [error, setError] = useState('')
-  const [processedUrls, setProcessedUrls] = useState<Set<string>>(new Set())
+  const { 
+    url, 
+    shortenedUrl, 
+    loading, 
+    error, 
+    processedUrls,
+    setUrl,
+    setShortenedUrl,
+    setLoading,
+    setError,
+    addProcessedUrl,
+    clearError
+  } = useUrlStore()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!url.trim()) {
-      console.log('URL is empty, returning')
+    
+    // Validate URL using validation class
+    const validation = URLValidator.validate(url)
+    if (!validation.isValid) {
+      setError(validation.error!)
       return
     }
     
+    const trimmedUrl = url.trim()
+    
     // Check if URL already processed
-    if (processedUrls.has(url.trim())) {
+    if (processedUrls.has(trimmedUrl)) {
       setError('This URL has already been shortened')
       return
     }
@@ -27,20 +41,20 @@ function UrlBar() {
     // Prevent shortening our own short URLs
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8828'
     const shortUrlPattern = new RegExp(`^${baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[a-zA-Z0-9]{7}$`)
-    if (shortUrlPattern.test(url.trim())) {
+    if (shortUrlPattern.test(trimmedUrl)) {
       setError('Cannot shorten an already shortened URL')
       return
     }
     
     setLoading(true)
-    setError('')
+    clearError()
     
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/shorten`, {
-        longURL: url
+        longURL: trimmedUrl
       })
       setShortenedUrl(response.data.shortURL)
-      setProcessedUrls(prev => new Set(prev).add(url.trim()))
+      addProcessedUrl(trimmedUrl)
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || 'Failed to shorten URL'
       setError(errorMessage)
