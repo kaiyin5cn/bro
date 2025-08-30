@@ -3,7 +3,7 @@
 ## Quick Start
 
 ```bash
-npm install      # Install dependencies
+npm run setup    # Complete setup (deps + admin + examples + tests)
 npm run dev      # Start development server
 ```
 

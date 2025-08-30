@@ -30,6 +30,43 @@ async function createAdmin() {
   }
 }
 
+async function generateExamples() {
+  try {
+    const { connectDB } = await import('../config/database.js');
+    const Url = (await import('../models/URL.js')).default;
+    const { generateShortCode } = await import('../utils/shortCode.js');
+    
+    await connectDB();
+    
+    const existingCount = await Url.countDocuments();
+    if (existingCount > 0) {
+      console.log(`ℹ️  Found ${existingCount} existing URLs, skipping example generation`);
+      return;
+    }
+    
+    const popularDomains = [
+      'https://google.com', 'https://youtube.com', 'https://facebook.com',
+      'https://twitter.com', 'https://instagram.com', 'https://linkedin.com',
+      'https://github.com', 'https://stackoverflow.com', 'https://reddit.com',
+      'https://amazon.com', 'https://netflix.com', 'https://microsoft.com',
+      'https://apple.com', 'https://wikipedia.org', 'https://medium.com',
+      'https://discord.com', 'https://twitch.tv', 'https://spotify.com',
+      'https://dropbox.com', 'https://zoom.us'
+    ];
+    
+    const urlsToCreate = popularDomains.map(domain => ({
+      longURL: domain,
+      shortCode: generateShortCode(),
+      accessCount: Math.floor(Math.random() * 100)
+    }));
+    
+    const result = await Url.insertMany(urlsToCreate);
+    console.log(`✅ Generated ${result.length} example URLs`);
+  } catch (error) {
+    console.error('❌ Failed to generate examples:', error.message);
+  }
+}
+
 async function devSetup(useReplica = false) {
   console.log(`🚀 Starting development setup${useReplica ? ' with replica set' : ''}...\n`);
 
@@ -47,7 +84,10 @@ async function devSetup(useReplica = false) {
     // 4. Create admin user
     await createAdmin();
 
-    // 5. Run tests
+    // 5. Generate example URLs
+    await generateExamples();
+
+    // 6. Run tests
     await runTests();
 
     console.log('\n🎉 Development setup complete!');

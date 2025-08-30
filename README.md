@@ -61,7 +61,7 @@ A full-stack URL shortener application that combines web technologies with block
 ```bash
 # Backend setup
 cd backend
-npm run setup        # Install deps + configure + test
+npm run setup        # Install deps + configure + create admin + generate examples + test
 npm run dev          # Start server on port 8828
 
 # Frontend setup (new terminal)
@@ -86,9 +86,9 @@ npm run dev          # Start server on port 5173
 #### 1. Automated Setup
 ```bash
 cd backend
-npm run setup        # Install dependencies + configure environment + run tests
+npm run setup        # Install dependencies + configure + admin + examples + tests
 # OR
-npm run setup:auth   # Install dependencies + create admin user
+npm run setup:auth   # Install dependencies + create admin user (legacy)
 ```
 
 #### 2. Manual Environment Configuration (if needed)
@@ -273,8 +273,9 @@ redis-cli info stats
 ### Available Scripts
 
 #### Backend
-- `npm run setup` - Full setup (deps + env + MongoDB + tests)
-- `npm run setup:auth` - Setup + create admin user
+- `npm run setup` - Full setup (deps + env + MongoDB + admin + examples + tests)
+- `npm run setup:auth` - Setup + create admin user (legacy)
+- `npm run generate-examples` - Generate 20 example URLs with popular domains
 - `npm run dev` - Development server with hot reload
 - `npm test` - Run unit tests
 - `npm run load-test` - Performance testing
