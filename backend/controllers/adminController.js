@@ -1,4 +1,4 @@
-import Url from '../models/URL.js';
+import Url from '../models/Url.js';
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger.js';
 

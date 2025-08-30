@@ -33,4 +33,4 @@ const urlSchema = new mongoose.Schema({
 // TTL index - expire documents 7 days after last update
 urlSchema.index({ updatedAt: 1 }, { expireAfterSeconds: 604800 });
 
-export default mongoose.model('URL', urlSchema);
+export default mongoose.models.Url || mongoose.model('Url', urlSchema);

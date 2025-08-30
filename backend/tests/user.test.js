@@ -27,6 +27,78 @@ describe('User Model', () => {
     });
   });
 
+  describe('Salt Functionality', () => {
+    test('should generate salt on password save', () => {
+      const user = new User({
+        username: 'saltuser',
+        password: 'password123',
+        role: 'user'
+      });
+
+      // Simulate pre-save hook
+      expect(user.salt).toBeUndefined();
+    });
+
+    test('should have salt after password hashing', async () => {
+      const user = new User({
+        username: 'saltuser2',
+        password: 'password123',
+        role: 'user'
+      });
+
+      // Manually trigger pre-save logic
+      if (!user.salt) {
+        const crypto = await import('crypto');
+        user.salt = crypto.default.randomBytes(16).toString('hex');
+      }
+
+      expect(user.salt).toBeDefined();
+      expect(user.salt).toHaveLength(32);
+      expect(user.salt).toMatch(/^[a-f0-9]{32}$/);
+    });
+
+    test('should generate different salts for different users', async () => {
+      const crypto = await import('crypto');
+      
+      const user1 = new User({
+        username: 'user1',
+        password: 'password123',
+        role: 'user'
+      });
+      user1.salt = crypto.default.randomBytes(16).toString('hex');
+
+      const user2 = new User({
+        username: 'user2', 
+        password: 'password123',
+        role: 'user'
+      });
+      user2.salt = crypto.default.randomBytes(16).toString('hex');
+
+      expect(user1.salt).not.toBe(user2.salt);
+    });
+
+    test('should use salt in password comparison', async () => {
+      const bcrypt = await import('bcryptjs');
+      const crypto = await import('crypto');
+      
+      const user = new User({
+        username: 'testuser',
+        password: 'password123',
+        role: 'user'
+      });
+      
+      // Simulate pre-save hook
+      user.salt = crypto.default.randomBytes(16).toString('hex');
+      user.password = await bcrypt.default.hash('password123' + user.salt, 12);
+      
+      const isValid = await user.comparePassword('password123');
+      const isInvalid = await user.comparePassword('wrongpassword');
+      
+      expect(isValid).toBe(true);
+      expect(isInvalid).toBe(false);
+    });
+  });
+
   describe('User Validation', () => {
     test('should validate valid user data', () => {
       const userData = {

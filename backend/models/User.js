@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -15,6 +16,9 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters']
   },
+  salt: {
+    type: String
+  },
   role: {
     type: String,
     enum: ['admin', 'user'],
@@ -27,7 +31,8 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   try {
-    this.password = await bcrypt.hash(this.password, 12);
+    this.salt = crypto.randomBytes(16).toString('hex');
+    this.password = await bcrypt.hash(this.password + this.salt, 12);
     next();
   } catch (error) {
     next(error);
@@ -36,7 +41,7 @@ userSchema.pre('save', async function(next) {
 
 userSchema.methods.comparePassword = async function(password) {
   try {
-    return await bcrypt.compare(password, this.password);
+    return await bcrypt.compare(password + this.salt, this.password);
   } catch (error) {
     return false;
   }

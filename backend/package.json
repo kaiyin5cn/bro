@@ -15,7 +15,8 @@
     "test:shortcode": "node --experimental-vm-modules node_modules/jest/bin/jest.js shortCode.enhanced.test.js",
     "load-test": "node load-tests/run-load-test.js",
     "stress-test": "node load-tests/stress-test.js",
-    "workflow-test": "node load-tests/full-workflow-test.js"
+    "workflow-test": "node load-tests/full-workflow-test.js",
+    "generate-examples": "node scripts/generate-examples.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

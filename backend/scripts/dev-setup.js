@@ -1,5 +1,35 @@
 import { setupEnvironment, installDependencies, runTests } from './utils/system-setup.js';
 
+async function createAdmin() {
+  try {
+    const { connectDB } = await import('../config/database.js');
+    const User = (await import('../models/User.js')).default;
+    
+    await connectDB();
+    
+    const existingAdmin = await User.findOne({ username: 'admin' });
+    if (existingAdmin) {
+      console.log('✅ Admin user already exists');
+      return;
+    }
+    
+    const admin = new User({
+      username: 'admin',
+      password: 'admin123',
+      role: 'admin'
+    });
+    
+    await admin.save();
+    console.log('✅ Admin user created successfully');
+    console.log('   Username: admin');
+    console.log('   Password: admin123');
+    console.log('   ⚠️  Change password in production!');
+  } catch (error) {
+    console.error('❌ Failed to create admin user:', error.message);
+    throw error;
+  }
+}
+
 async function devSetup(useReplica = false) {
   console.log(`🚀 Starting development setup${useReplica ? ' with replica set' : ''}...\n`);
 
@@ -14,7 +44,10 @@ async function devSetup(useReplica = false) {
     const { setupMongoDB } = await import('./utils/mongodb-simple.js');
     await setupMongoDB(useReplica);
 
-    // 4. Run tests
+    // 4. Create admin user
+    await createAdmin();
+
+    // 5. Run tests
     await runTests();
 
     console.log('\n🎉 Development setup complete!');
