@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { FiEdit, FiTrash2, FiChevronUp, FiChevronDown } from 'react-icons/fi'
 import axios from 'axios'
 import { useAuthStore } from '../../store/authStore'
+import { useSSE } from '../../hooks/useSSE'
 import './Dashboard.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8828'
@@ -48,6 +49,72 @@ function Dashboard({ onLogout }: DashboardProps) {
   const [totalItems, setTotalItems] = useState(0)
   const [notification, setNotification] = useState('')
   const [notificationType, setNotificationType] = useState<'success' | 'error'>('error')
+  const [sseConnected, setSseConnected] = useState(false)
+  const [animatingCells, setAnimatingCells] = useState<Set<string>>(new Set())
+
+  const handleSSEMessage = useCallback((data: { type: string; data: any }) => {
+    if (data.type === 'connected') {
+      setSseConnected(true)
+      return
+    }
+    
+    const triggerAnimation = (id: string, type: 'access' | 'shortCode') => {
+      const key = `${id}-${type}`
+      setAnimatingCells(prev => new Set(prev).add(key))
+      setTimeout(() => {
+        setAnimatingCells(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(key)
+          return newSet
+        })
+      }, 600)
+    }
+    
+    switch (data.type) {
+      case 'accessCount':
+        setUrlData(prev => 
+          prev.map(url => 
+            url._id === data.data._id 
+              ? { ...url, accessCount: data.data.accessCount }
+              : url
+          )
+        )
+        triggerAnimation(data.data._id, 'access')
+        break
+      case 'urlCreated':
+        if (currentPage === 1) {
+          fetchUrls()
+        }
+        break
+      case 'urlUpdated':
+        setUrlData(prev => 
+          prev.map(url => 
+            url._id === data.data._id ? data.data : url
+          )
+        )
+        triggerAnimation(data.data._id, 'shortCode')
+        break
+      case 'urlDeleted':
+        setUrlData(prev => prev.filter(url => url._id !== data.data._id))
+        break
+    }
+  }, [currentPage])
+
+  const sseControl = useSSE(`${API_BASE}/admin/updates`, handleSSEMessage, !loading)
+
+  useEffect(() => {
+    // Reset connection status when component unmounts or loading changes
+    if (loading) {
+      setSseConnected(false)
+    }
+  }, [loading])
+
+  useEffect(() => {
+    return () => {
+      sseControl.close()
+      setSseConnected(false)
+    }
+  }, [])
 
   useEffect(() => {
     fetchUrls()
@@ -160,9 +227,15 @@ function Dashboard({ onLogout }: DashboardProps) {
     <div className="dashboard">
       <header className="dashboard-header">
         <h1>Admin Dashboard</h1>
-        <button onClick={onLogout} className="logout-btn">
-          Logout
-        </button>
+        <div className="header-controls">
+          <div className={`sse-status ${sseConnected ? 'connected' : 'disconnected'}`}>
+            <span className="status-dot"></span>
+            {sseConnected ? 'Live Updates' : 'Offline'}
+          </div>
+          <button onClick={onLogout} className="logout-btn">
+            Logout
+          </button>
+        </div>
       </header>
       <div className="dashboard-content">
         {loading ? (
@@ -239,8 +312,8 @@ function Dashboard({ onLogout }: DashboardProps) {
                 {!sortLoading && urlData.map(item => (
                   <tr key={item._id}>
                     <td className="url-cell">{item.longURL}</td>
-                    <td>{item.shortCode}</td>
-                    <td>{item.accessCount}</td>
+                    <td className={animatingCells.has(`${item._id}-shortCode`) ? 'animate-update' : ''}>{item.shortCode}</td>
+                    <td className={animatingCells.has(`${item._id}-access`) ? 'animate-scroll' : ''}>{item.accessCount}</td>
                     <td>{new Date(item.createdAt).toLocaleDateString()}</td>
                   <td className="actions-cell">
                     <div className="tooltip-container">

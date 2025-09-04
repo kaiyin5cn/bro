@@ -2,6 +2,9 @@ import Url from '../models/Url.js';
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger.js';
 
+// Store SSE connections
+const sseConnections = new Set();
+
 export const getAllUrls = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -49,6 +52,12 @@ export const deleteUrl = async (req, res) => {
       return res.status(404).json({ error: 'URL not found' });
     }
     
+    // Broadcast deletion
+    broadcastUpdate({
+      type: 'urlDeleted',
+      data: { _id: url._id.toString() }
+    });
+    
     res.json({ message: 'URL deleted successfully' });
   } catch (error) {
     logger.error('Failed to delete URL', error, { id: req.params.id });
@@ -84,6 +93,12 @@ export const updateUrl = async (req, res) => {
       return res.status(404).json({ error: 'URL not found' });
     }
     
+    // Broadcast update
+    broadcastUpdate({
+      type: 'urlUpdated',
+      data: url
+    });
+    
     res.json(url);
   } catch (error) {
     logger.error('Failed to update URL', error, { id: req.params.id, shortCode: req.body.shortCode });
@@ -92,4 +107,34 @@ export const updateUrl = async (req, res) => {
     }
     res.status(500).json({ error: 'Server error' });
   }
+};
+
+export const sseUpdates = (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Cache-Control'
+  });
+  
+  sseConnections.add(res);
+  
+  // Send initial connection message
+  res.write(`data: ${JSON.stringify({ type: 'connected', message: 'SSE connected' })}\n\n`);
+  
+  req.on('close', () => {
+    sseConnections.delete(res);
+  });
+};
+
+export const broadcastUpdate = (data) => {
+  const message = `data: ${JSON.stringify(data)}\n\n`;
+  sseConnections.forEach(res => {
+    try {
+      res.write(message);
+    } catch (error) {
+      sseConnections.delete(res);
+    }
+  });
 };

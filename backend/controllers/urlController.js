@@ -2,6 +2,7 @@ import Url from '../models/URL.js';
 import { generateShortCode } from '../utils/shortCode.js';
 import { redisClient } from '../config/redis.js';
 import { logger } from '../utils/logger.js';
+import { broadcastUpdate } from './adminController.js';
 
 export const shortenUrl = async (req, res) => {
   try {
@@ -71,6 +72,12 @@ export const shortenUrl = async (req, res) => {
       logger.error('Redis cache store failed', error, { shortCode });
     }
 
+    // Broadcast new URL creation
+    broadcastUpdate({
+      type: 'urlCreated',
+      data: urlDoc
+    });
+
     res.json({ shortURL: `${process.env.BASE_URL}/${shortCode}` });
   } catch (error) {
     logger.error('URL shortening failed', error, { longURL: req.body.longURL });
@@ -125,10 +132,22 @@ export const redirectUrl = async (req, res) => {
     process.nextTick(async () => {
       try {
         // Update access count
-        await Url.findOneAndUpdate(
+        const updatedUrl = await Url.findOneAndUpdate(
           { shortCode },
-          { $inc: { accessCount: 1 } }
+          { $inc: { accessCount: 1 } },
+          { new: true }
         );
+        
+        // Broadcast real-time update
+        if (updatedUrl) {
+          broadcastUpdate({
+            type: 'accessCount',
+            data: {
+              _id: updatedUrl._id.toString(),
+              accessCount: updatedUrl.accessCount
+            }
+          });
+        }
         
         // Cache in Redis for future requests
         await redisClient.setEx(`url:${shortCode}`, 86400, longURL);

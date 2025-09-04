@@ -17,6 +17,59 @@
   margin: 0;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sse-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.sse-status.connected {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.sse-status.disconnected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.sse-status.connected .status-dot {
+  background-color: #28a745;
+}
+
+.sse-status.disconnected .status-dot {
+  background-color: #dc3545;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 .logout-btn {
   padding: 0.5rem 1rem;
   background-color: #dc3545;
@@ -377,5 +430,48 @@
   to {
     transform: translateX(0);
     opacity: 1;
+  }
+}
+
+.animate-scroll {
+  animation: scrollDown 0.6s ease-out;
+  background-color: #e8f5e8;
+}
+
+.animate-update {
+  animation: updateFlash 0.6s ease-out;
+  background-color: #fff3cd;
+}
+
+@keyframes scrollDown {
+  0% {
+    transform: translateY(-10px);
+    background-color: #28a745;
+    color: white;
+    font-weight: bold;
+  }
+  50% {
+    transform: translateY(0);
+    background-color: #d4edda;
+  }
+  100% {
+    transform: translateY(0);
+    background-color: #e8f5e8;
+  }
+}
+
+@keyframes updateFlash {
+  0% {
+    background-color: #ffc107;
+    transform: scale(1.05);
+    font-weight: bold;
+  }
+  50% {
+    background-color: #fff3cd;
+    transform: scale(1.02);
+  }
+  100% {
+    background-color: #fff3cd;
+    transform: scale(1);
   }
 }
