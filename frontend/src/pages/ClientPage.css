@@ -8,6 +8,29 @@
   gap: 2rem;
 }
 
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.game-btn {
+  padding: 12px 24px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.game-btn:hover {
+  background: #0056b3;
+}
+
 .support-btn {
   padding: 12px 24px;
   background: #28a745;

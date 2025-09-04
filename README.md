@@ -1,8 +1,8 @@
-# URL Shortener with Web3 Donations
+# URL Shortener with Web3 Donations & Embedded Snake Game
 
 ## 🎯 Project Abstract
 
-A full-stack URL shortener application that converts long URLs into short, shareable links with integrated Web3 donation functionality. The backend uses Node.js with Express for API services and MongoDB for data persistence, while Redis provides caching for improved performance. The frontend is built with React and TypeScript for reusable components and type safety. Web3 integration enables ETH donations with NFT rewards for contributors.
+A full-stack URL shortener application that converts long URLs into short, shareable links with integrated Web3 donation functionality and an embedded Python Snake game. The backend uses Node.js with Express for API services and MongoDB for data persistence, while Redis provides caching for improved performance. The frontend is built with React and TypeScript for reusable components and type safety. Web3 integration enables ETH donations with NFT rewards for contributors. The embedded Snake game runs via WebAssembly using pygbag.
 
 ## 🔗 Backend API Endpoints
 
@@ -33,6 +33,8 @@ A full-stack URL shortener application that converts long URLs into short, share
 - **Web3 Donations**: Connect MetaMask wallet and donate ETH
 - **NFT Rewards**: Receive NFTs for donations ≥ $100 USD
 - **Real-time USD Conversion**: View ETH amounts in USD equivalent
+- **Embedded Snake Game**: Play Python Snake game directly in browser
+- **Instant Game Loading**: Game stays cached for immediate access
 
 ### Admin Features
 - **Dashboard Access**: Secure login for administrators
@@ -45,6 +47,7 @@ A full-stack URL shortener application that converts long URLs into short, share
 
 ### Prerequisites
 - Node.js (v16 or higher)
+- Python 3.8+ (for Snake game)
 - MongoDB (local or cloud instance)
 - Redis (optional, for caching)
 - MetaMask browser extension (for Web3 features)
@@ -77,11 +80,26 @@ A full-stack URL shortener application that converts long URLs into short, share
    ```
    This will install dependencies and create environment configuration.
 
-4. **Environment Configuration**
+4. **Python Game Setup**
+   ```bash
+   cd game
+   
+   # Install Python dependencies
+   pip install -r requirements.txt
+   
+   # Start the Snake game server (runs on port 8000)
+   # Option 1: Use batch file (Windows)
+   start_game.bat
+   
+   # Option 2: Direct command
+   python run_game.py
+   ```
+
+5. **Environment Configuration**
    - Backend: Update `backend/.env` with your MongoDB URI and other settings
    - Frontend: Update `frontend/.env` with API base URL
 
-5. **Start Development Servers**
+6. **Start Development Servers**
    ```bash
    # Backend (runs on port 8828)
    cd backend
@@ -92,10 +110,19 @@ A full-stack URL shortener application that converts long URLs into short, share
    npm run dev
    ```
 
-6. **Access the Application**
+7. **Access the Application**
    - Client Interface: http://localhost:5173
    - Admin Dashboard: http://localhost:5173/admin
+   - Snake Game: http://localhost:8000 (or embedded in client)
    - API Health Check: http://localhost:8828/health
+
+## 🎮 Snake Game Features
+
+- **Web-Compatible**: Python game converted to WebAssembly
+- **Embedded Play**: Runs directly in the URL shortener interface
+- **Instant Loading**: Game preloads and stays cached
+- **Classic Gameplay**: Arrow keys/WASD controls, grow by eating food
+- **Persistent State**: Game remains loaded when minimized
 
 ### Testing
 ```bash
