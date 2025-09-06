@@ -11,18 +11,38 @@ export const getAllUrls = async (req, res) => {
     const limit = parseInt(req.query.limit) || 25;
     const sortField = req.query.sortField || 'createdAt';
     const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+    const searchQuery = req.query.search || '';
+    const searchCategory = req.query.category || 'all';
     
     const skip = (page - 1) * limit;
     
     // Build sort object
     const sort = { [sortField]: sortOrder };
     
+    // Build search filter
+    let filter = {};
+    if (searchQuery.trim()) {
+      switch (searchCategory) {
+        case 'longURL':
+          filter.longURL = { $regex: searchQuery, $options: 'i' };
+          break;
+        case 'shortCode':
+          filter.shortCode = { $regex: searchQuery, $options: 'i' };
+          break;
+        default: // 'all'
+          filter.$or = [
+            { longURL: { $regex: searchQuery, $options: 'i' } },
+            { shortCode: { $regex: searchQuery, $options: 'i' } }
+          ];
+      }
+    }
+    
     const [urls, total] = await Promise.all([
-      Url.find({})
+      Url.find(filter)
         .sort(sort)
         .skip(skip)
         .limit(limit),
-      Url.countDocuments({})
+      Url.countDocuments(filter)
     ]);
     
     res.json({
@@ -32,6 +52,10 @@ export const getAllUrls = async (req, res) => {
         limit,
         total,
         pages: Math.ceil(total / limit)
+      },
+      search: {
+        query: searchQuery,
+        category: searchCategory
       }
     });
   } catch (error) {

@@ -306,6 +306,33 @@
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  gap: 1rem;
+}
+
+.search-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-category {
+  padding: 0.5rem;
+  border: 1px solid #e1e5e9;
+  border-radius: 4px;
+  background: white;
+  min-width: 100px;
+}
+
+.search-input {
+  padding: 0.5rem;
+  border: 1px solid #e1e5e9;
+  border-radius: 4px;
+  min-width: 200px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #646cff;
 }
 
 .pagination-top {

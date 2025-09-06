@@ -51,6 +51,8 @@ function Dashboard({ onLogout }: DashboardProps) {
   const [notificationType, setNotificationType] = useState<'success' | 'error'>('error')
   const [sseConnected, setSseConnected] = useState(false)
   const [animatingCells, setAnimatingCells] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchCategory, setSearchCategory] = useState('all')
 
   const handleSSEMessage = useCallback((data: { type: string; data: any }) => {
     if (data.type === 'connected') {
@@ -70,6 +72,19 @@ function Dashboard({ onLogout }: DashboardProps) {
       }, 600)
     }
     
+    const matchesFilter = (item: any) => {
+      if (!searchQuery.trim()) return true
+      switch (searchCategory) {
+        case 'longURL':
+          return item.longURL.toLowerCase().includes(searchQuery.toLowerCase())
+        case 'shortCode':
+          return item.shortCode.toLowerCase().includes(searchQuery.toLowerCase())
+        default:
+          return item.longURL.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                 item.shortCode.toLowerCase().includes(searchQuery.toLowerCase())
+      }
+    }
+    
     switch (data.type) {
       case 'accessCount':
         setUrlData(prev => 
@@ -79,26 +94,35 @@ function Dashboard({ onLogout }: DashboardProps) {
               : url
           )
         )
-        triggerAnimation(data.data._id, 'access')
+        const currentItem = urlData.find(url => url._id === data.data._id)
+        if (currentItem) {
+          triggerAnimation(data.data._id, 'access')
+        }
         break
       case 'urlCreated':
-        if (currentPage === 1) {
-          fetchUrls()
+        if (matchesFilter(data.data) && currentPage === 1) {
+          setUrlData(prev => [data.data, ...prev.slice(0, itemsPerPage - 1)])
+          setTotalItems(prev => prev + 1)
         }
         break
       case 'urlUpdated':
-        setUrlData(prev => 
-          prev.map(url => 
-            url._id === data.data._id ? data.data : url
+        if (matchesFilter(data.data)) {
+          setUrlData(prev => 
+            prev.map(url => 
+              url._id === data.data._id ? data.data : url
+            )
           )
-        )
-        triggerAnimation(data.data._id, 'shortCode')
+          triggerAnimation(data.data._id, 'shortCode')
+        } else {
+          setUrlData(prev => prev.filter(url => url._id !== data.data._id))
+        }
         break
       case 'urlDeleted':
         setUrlData(prev => prev.filter(url => url._id !== data.data._id))
+        setTotalItems(prev => prev - 1)
         break
     }
-  }, [currentPage])
+  }, [urlData, searchQuery, searchCategory, currentPage, itemsPerPage])
 
   const sseControl = useSSE(`${API_BASE}/admin/updates`, handleSSEMessage, !loading)
 
@@ -118,7 +142,13 @@ function Dashboard({ onLogout }: DashboardProps) {
 
   useEffect(() => {
     fetchUrls()
-  }, [currentPage, itemsPerPage])
+  }, [currentPage, itemsPerPage, searchQuery, searchCategory])
+  
+  useEffect(() => {
+    if (!loading) {
+      fetchUrls(true)
+    }
+  }, [sortField, sortOrder])
   
   useEffect(() => {
     if (!loading) {
@@ -134,7 +164,9 @@ function Dashboard({ onLogout }: DashboardProps) {
         page: currentPage,
         limit: itemsPerPage,
         sortField,
-        sortOrder
+        sortOrder,
+        search: searchQuery,
+        category: searchCategory
       }
       
       const response = await axios.get(`${API_BASE}/admin/urls`, {
@@ -243,6 +275,30 @@ function Dashboard({ onLogout }: DashboardProps) {
         ) : (
           <>
             <div className="table-controls">
+              <div className="search-controls">
+                <select 
+                  value={searchCategory}
+                  onChange={(e) => {
+                    setSearchCategory(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="search-category"
+                >
+                  <option value="all">All</option>
+                  <option value="longURL">Long URL</option>
+                  <option value="shortCode">Short Code</option>
+                </select>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  placeholder="Search..."
+                  className="search-input"
+                />
+              </div>
               <div className="items-per-page">
                 <label>Items per page:</label>
                 <select 

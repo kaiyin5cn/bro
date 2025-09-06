@@ -46,7 +46,7 @@ A full-stack URL shortener application that converts long URLs into short, share
 ## 🚀 Development
 
 ### Prerequisites
-- Node.js (v16 or higher)
+- Node.js (v20+, preferably v22.12+)
 - Python 3.8+ (for Snake game)
 - MongoDB (local or cloud instance)
 - Redis (optional, for caching)
