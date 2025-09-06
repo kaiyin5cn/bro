@@ -11,7 +11,7 @@ export async function connectDB() {
       socketTimeoutMS: 45000,
       bufferCommands: false
     };
-    
+
     await mongoose.connect(process.env.MONGODB_URI, options);
     console.log('MongoDB connected');
   } catch (error) {
