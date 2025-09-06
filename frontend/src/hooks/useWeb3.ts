@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { ethers } from 'ethers';
 
 const DONATION_CONTRACT_ADDRESS = '0xD8462e0A1a78E8ac07e0A414B5539680689071C8';
@@ -33,12 +33,15 @@ export const useWeb3 = () => {
     }
   }, []);
 
+  const provider = useMemo(() => {
+    return window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null;
+  }, []);
+
   const donate = useCallback(async (ethAmount: string) => {
-    if (!window.ethereum || !account) {
+    if (!provider || !account) {
       throw new Error('Wallet not connected');
     }
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
     const contract = new ethers.Contract(DONATION_CONTRACT_ADDRESS, DONATION_CONTRACT_ABI, signer);
 
@@ -47,19 +50,18 @@ export const useWeb3 = () => {
     });
 
     return tx;
-  }, [account]);
+  }, [provider, account]);
 
   const getUSDAmount = useCallback(async (ethAmount: string) => {
-    if (!window.ethereum) {
+    if (!provider) {
       throw new Error('MetaMask not installed');
     }
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
     const contract = new ethers.Contract(DONATION_CONTRACT_ADDRESS, DONATION_CONTRACT_ABI, provider);
     
     const usdAmount = await contract.ethToUSD(ethers.parseEther(ethAmount));
     return parseFloat(ethers.formatEther(usdAmount));
-  }, []);
+  }, [provider]);
 
   const disconnectWallet = useCallback(() => {
     setAccount('');

@@ -5,13 +5,20 @@ import { logger } from '../utils/logger.js';
 // Store SSE connections
 const sseConnections = new Set();
 
+import { sanitizeSearchQuery } from '../utils/sanitizer.js';
+
+const ALLOWED_SORT_FIELDS = ['longURL', 'shortCode', 'accessCount', 'createdAt'];
+const MAX_LIMIT = 100;
+
 export const getAllUrls = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 25;
-    const sortField = req.query.sortField || 'createdAt';
+    const limit = Math.min(parseInt(req.query.limit) || 25, MAX_LIMIT);
+    const sortField = ALLOWED_SORT_FIELDS.includes(req.query.sortField) 
+      ? req.query.sortField 
+      : 'createdAt';
     const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
-    const searchQuery = req.query.search || '';
+    const searchQuery = sanitizeSearchQuery(req.query.search || '');
     const searchCategory = req.query.category || 'all';
     
     const skip = (page - 1) * limit;

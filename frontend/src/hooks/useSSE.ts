@@ -8,6 +8,10 @@ interface SSEData {
 export const useSSE = (url: string, onMessage: (data: SSEData) => void, enabled: boolean = true) => {
   const eventSourceRef = useRef<EventSource | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const onMessageRef = useRef(onMessage)
+  
+  // Update ref when callback changes
+  onMessageRef.current = onMessage
 
   useEffect(() => {
     if (!enabled) return
@@ -22,7 +26,7 @@ export const useSSE = (url: string, onMessage: (data: SSEData) => void, enabled:
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          onMessage(data)
+          onMessageRef.current(data)
         } catch (error) {
           console.error('Failed to parse SSE data:', error)
         }
@@ -49,7 +53,7 @@ export const useSSE = (url: string, onMessage: (data: SSEData) => void, enabled:
         clearTimeout(reconnectTimeoutRef.current)
       }
     }
-  }, [url, onMessage, enabled])
+  }, [url, enabled])
 
   return {
     close: () => {

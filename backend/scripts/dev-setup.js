@@ -15,14 +15,14 @@ async function createAdmin() {
 
     const admin = new User({
       username: 'admin',
-      password: 'admin123',
+      password: 'Admin123',
       role: 'admin'
     });
 
     await admin.save();
     console.log('✅ Admin user created successfully');
     console.log('   Username: admin');
-    console.log('   Password: admin123');
+    console.log('   Password: Admin123');
     console.log('   ⚠️  Change password in production!');
   } catch (error) {
     console.error('❌ Failed to create admin user:', error.message);
@@ -198,22 +198,30 @@ async function generateExamples() {
       'https://stackoverflow.com' // Placeholder for a new one, as stackoverflow was already in the initial list.
     ];
 
+    const batchSize = 50;
     let successCount = 0;
     
-    for (const domain of popularDomains) {
-      try {
-        await Url.create({
-          longURL: domain,
-          shortCode: generateShortCode(),
-          accessCount: Math.floor(Math.random() * 100)
-        });
-        successCount++;
-      } catch (error) {
-        if (error.code === 11000) {
-          // Skip duplicate URLs
-          continue;
+    // Process in batches for better performance
+    for (let i = 0; i < popularDomains.length; i += batchSize) {
+      const batch = popularDomains.slice(i, i + batchSize);
+      const operations = batch.map(domain => ({
+        insertOne: {
+          document: {
+            longURL: domain,
+            shortCode: generateShortCode(),
+            accessCount: Math.floor(Math.random() * 100)
+          }
         }
-        throw error;
+      }));
+      
+      try {
+        const result = await Url.bulkWrite(operations, { ordered: false });
+        successCount += result.insertedCount;
+      } catch (error) {
+        // Handle bulk write errors - some may succeed
+        if (error.writeErrors) {
+          successCount += operations.length - error.writeErrors.length;
+        }
       }
     }
     

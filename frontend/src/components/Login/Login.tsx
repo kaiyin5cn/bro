@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { FiUser, FiLock } from 'react-icons/fi'
 import axios from 'axios'
-import { AuthValidator } from '../../constants/validation'
 import { useAuthStore } from '../../store/authStore'
 import './Login.css'
 
@@ -15,16 +14,9 @@ function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Validate inputs using validation classes
-    const usernameValidation = AuthValidator.validateUsername(username)
-    if (!usernameValidation.isValid) {
-      setError(usernameValidation.error!)
-      return
-    }
-    
-    const passwordValidation = AuthValidator.validatePassword(password)
-    if (!passwordValidation.isValid) {
-      setError(passwordValidation.error!)
+    // Basic validation
+    if (!username.trim() || !password) {
+      setError('Username and password are required')
       return
     }
     

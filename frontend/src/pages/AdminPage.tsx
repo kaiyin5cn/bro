@@ -9,7 +9,7 @@ function AdminPage() {
 
   useEffect(() => {
     initializeAuth()
-  }, [])
+  }, [initializeAuth])
 
   return (
     <div className="admin-page">

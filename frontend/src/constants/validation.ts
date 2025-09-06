@@ -34,7 +34,7 @@ export class URLValidator {
 export class AuthValidator {
   private static readonly USERNAME_MIN = 3;
   private static readonly USERNAME_MAX = 20;
-  private static readonly PASSWORD_MIN = 6;
+  private static readonly PASSWORD_MIN = 8;
 
   static validateUsername(username: string): { isValid: boolean; error?: string } {
     const trimmed = username.trim();
@@ -51,6 +51,10 @@ export class AuthValidator {
       return { isValid: false, error: `Username cannot exceed ${this.USERNAME_MAX} characters` };
     }
     
+    if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
+      return { isValid: false, error: 'Username can only contain letters, numbers, underscore, and hyphen' };
+    }
+    
     return { isValid: true };
   }
 
@@ -59,8 +63,12 @@ export class AuthValidator {
       return { isValid: false, error: 'Password is required' };
     }
     
-    if (password.length < this.PASSWORD_MIN) {
-      return { isValid: false, error: `Password must be at least ${this.PASSWORD_MIN} characters` };
+    if (password.length < 8) {
+      return { isValid: false, error: 'Password must be at least 8 characters' };
+    }
+    
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      return { isValid: false, error: 'Password must contain uppercase, lowercase, and number' };
     }
     
     return { isValid: true };

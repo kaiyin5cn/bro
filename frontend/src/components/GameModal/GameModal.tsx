@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { config } from '../../constants/config'
 import './GameModal.css'
 
 interface GameModalProps {
@@ -39,7 +40,7 @@ function GameModal({ isOpen, onClose }: GameModalProps) {
         <div className="game-container">
           <iframe 
             key={isOpen ? 'game-loaded' : 'game-unloaded'}
-            src={isOpen ? "http://localhost:8000" : ""}
+            src={isOpen ? config.gameUrl : ""}
             width="600" 
             height="480"
             className="game-iframe"

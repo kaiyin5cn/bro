@@ -18,14 +18,14 @@ async function createAdmin() {
     // Create admin user
     const admin = new User({
       username: 'admin',
-      password: 'admin123',
+      password: 'Admin123',
       role: 'admin'
     });
     
     await admin.save();
     console.log('✅ Admin user created successfully');
     console.log('   Username: admin');
-    console.log('   Password: admin123');
+    console.log('   Password: Admin123');
     console.log('   ⚠️  Change password in production!');
     
     process.exit(0);
