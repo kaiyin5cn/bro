@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { FiEdit, FiTrash2, FiChevronUp, FiChevronDown } from 'react-icons/fi'
 import axios from 'axios'
 import { useAuthStore } from '../../store/authStore'
@@ -53,6 +53,7 @@ function Dashboard({ onLogout }: DashboardProps) {
   const [animatingCells, setAnimatingCells] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [searchCategory, setSearchCategory] = useState('all')
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const handleSSEMessage = useCallback((data: { type: string; data: any }) => {
     if (data.type === 'connected') {
@@ -158,6 +159,14 @@ function Dashboard({ onLogout }: DashboardProps) {
 
   const fetchUrls = async (isSort = false) => {
     try {
+      // Cancel previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      
+      // Create new AbortController
+      abortControllerRef.current = new AbortController()
+      
       if (isSort) setSortLoading(true)
       
       const params = {
@@ -171,13 +180,17 @@ function Dashboard({ onLogout }: DashboardProps) {
       
       const response = await axios.get(`${API_BASE}/admin/urls`, {
         headers: getAuthHeaders(),
-        params
+        params,
+        signal: abortControllerRef.current.signal
       })
       
       setUrlData(response.data.urls)
       setTotalPages(response.data.pagination.pages)
       setTotalItems(response.data.pagination.total)
     } catch (error: any) {
+      if (error.name === 'CanceledError') {
+        return // Request was cancelled, ignore
+      }
       if (error.response?.status === 401) {
         logout()
       } else {
