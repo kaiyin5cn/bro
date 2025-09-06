@@ -1,6 +1,7 @@
 import express from 'express';
 import { trackDonation, getDonationStatus, getDonationHistory } from '../controllers/donationController.js';
 import { validateDonationTracking } from '../middleware/validation.js';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -12,5 +13,7 @@ router.get('/status/:txHash', getDonationStatus);
 
 // GET /donation/history/:address - Get donation history for address
 router.get('/history/:address', getDonationHistory);
+
+
 
 export default router;

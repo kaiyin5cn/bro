@@ -3,6 +3,7 @@ import { FiEdit, FiTrash2, FiChevronUp, FiChevronDown } from 'react-icons/fi'
 import axios from 'axios'
 import { useAuthStore } from '../../store/authStore'
 import { useSSE } from '../../hooks/useSSE'
+import { useWeb3 } from '../../hooks/useWeb3'
 import './Dashboard.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8828'
@@ -35,6 +36,7 @@ interface DashboardProps {
 
 function Dashboard({ onLogout }: DashboardProps) {
   const { logout } = useAuthStore()
+  const { account, connectWallet, withdraw } = useWeb3()
   const [urlData, setUrlData] = useState<UrlData[]>([])
   const [loading, setLoading] = useState(true)
   const [sortLoading, setSortLoading] = useState(false)
@@ -53,6 +55,7 @@ function Dashboard({ onLogout }: DashboardProps) {
   const [animatingCells, setAnimatingCells] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [searchCategory, setSearchCategory] = useState('all')
+  const [withdrawing, setWithdrawing] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const handleSSEMessage = useCallback((data: { type: string; data: any }) => {
@@ -261,6 +264,42 @@ function Dashboard({ onLogout }: DashboardProps) {
     setCurrentPage(1)
   }
 
+  const handleWithdraw = async () => {
+    if (!account) {
+      try {
+        await connectWallet()
+      } catch (error) {
+        setNotificationType('error')
+        setNotification('Please connect your wallet first')
+        setTimeout(() => setNotification(''), 5000)
+        return
+      }
+    }
+
+    if (!confirm('Are you sure you want to withdraw all donations? This action cannot be undone.')) {
+      return
+    }
+
+    setWithdrawing(true)
+    try {
+      const tx = await withdraw()
+      setNotification('Transaction sent! Waiting for confirmation...')
+      
+      const receipt = await tx.wait()
+      
+      setNotificationType('success')
+      setNotification(`Withdrawal successful! TX: ${receipt.hash.slice(0, 10)}...`)
+      setTimeout(() => setNotification(''), 5000)
+    } catch (error: any) {
+      const errorMessage = error.message || 'Withdrawal failed'
+      setNotificationType('error')
+      setNotification(errorMessage)
+      setTimeout(() => setNotification(''), 5000)
+    } finally {
+      setWithdrawing(false)
+    }
+  }
+
   // Data is already sorted by backend
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -277,6 +316,13 @@ function Dashboard({ onLogout }: DashboardProps) {
             <span className="status-dot"></span>
             {sseConnected ? 'Live Updates' : 'Offline'}
           </div>
+          <button 
+            onClick={handleWithdraw} 
+            disabled={withdrawing}
+            className="withdraw-btn"
+          >
+            {withdrawing ? 'Withdrawing...' : 'Withdraw Donations'}
+          </button>
           <button onClick={onLogout} className="logout-btn">
             Logout
           </button>

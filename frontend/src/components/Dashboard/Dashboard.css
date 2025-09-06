@@ -70,6 +70,25 @@
   }
 }
 
+.withdraw-btn {
+  padding: 0.5rem 1rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.withdraw-btn:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.withdraw-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
 .logout-btn {
   padding: 0.5rem 1rem;
   background-color: #dc3545;
