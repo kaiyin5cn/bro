@@ -19,9 +19,13 @@ export const useWeb3 = () => {
 
     setIsConnecting(true);
     try {
+      // Request wallet selection dialog
       const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts',
-      });
+        method: 'wallet_requestPermissions',
+        params: [{ eth_accounts: {} }]
+      }).then(() => 
+        window.ethereum.request({ method: 'eth_requestAccounts' })
+      );
       setAccount(accounts[0]);
       return accounts[0];
     } finally {
@@ -57,10 +61,15 @@ export const useWeb3 = () => {
     return parseFloat(ethers.formatEther(usdAmount));
   }, []);
 
+  const disconnectWallet = useCallback(() => {
+    setAccount('');
+  }, []);
+
   return {
     account,
     isConnecting,
     connectWallet,
+    disconnectWallet,
     donate,
     getUSDAmount
   };

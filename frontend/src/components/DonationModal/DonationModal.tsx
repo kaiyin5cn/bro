@@ -22,7 +22,7 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
     reset
   } = useDonationStore();
   
-  const { account, isConnecting, connectWallet, donate, getUSDAmount } = useWeb3();
+  const { account, isConnecting, connectWallet, disconnectWallet, donate, getUSDAmount } = useWeb3();
 
   useEffect(() => {
     if (ethAmount && parseFloat(ethAmount) > 0) {
@@ -138,6 +138,16 @@ const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose }) => {
           ) : (
             <div className="wallet-info">
               <p>Connected: {account.slice(0, 6)}...{account.slice(-4)}</p>
+              <button 
+                className="disconnect-btn" 
+                onClick={() => {
+                  disconnectWallet();
+                  reset();
+                }}
+                title="Disconnect wallet"
+              >
+                ×
+              </button>
             </div>
           )}
           
